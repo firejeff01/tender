@@ -1,0 +1,29 @@
+name: CI (dev)
+
+# 觸發時機：push 到 dev 分支（純編譯驗證，不建 MSI、不發 Release）
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Tender.slnx
+
+      - name: Build
+        run: dotnet build Tender.slnx --no-restore -c Release --nologo
