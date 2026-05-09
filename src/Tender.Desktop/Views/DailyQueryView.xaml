@@ -428,7 +428,9 @@
                       Background="{StaticResource BgMainBrush}"
                       BorderBrush="{StaticResource BorderBrush}"
                       Foreground="{StaticResource TextPrimaryBrush}"
-                      HeadersVisibility="Column">
+                      HeadersVisibility="Column"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <DataGrid.InputBindings>
                     <MouseBinding MouseAction="LeftDoubleClick"
                                   Command="{Binding OpenDetailCommand}"
@@ -521,13 +523,13 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="機關名稱" Binding="{Binding AgencyName}" Width="180" />
-                    <DataGridTextColumn Header="標案名稱" Binding="{Binding TenderName}" Width="*" />
-                    <DataGridTextColumn Header="招標方式" Binding="{Binding TenderMethod}" Width="120" />
-                    <DataGridTextColumn Header="採購性質" Binding="{Binding ProcurementType}" Width="80" />
-                    <DataGridTextColumn Header="公告日期" Binding="{Binding AnnouncementDate}" Width="90" />
-                    <DataGridTextColumn Header="截止投標" Binding="{Binding BidDeadline}" Width="90" />
-                    <DataGridTextColumn Header="預算金額" Binding="{Binding BudgetAmount, StringFormat='{}{0:N0}'}" Width="120">
+                    <DataGridTextColumn Header="機關名稱" Binding="{Binding AgencyName}" Width="180" MinWidth="140" />
+                    <DataGridTextColumn Header="標案名稱" Binding="{Binding TenderName}" Width="*" MinWidth="320" />
+                    <DataGridTextColumn Header="招標方式" Binding="{Binding TenderMethod}" Width="120" MinWidth="100" />
+                    <DataGridTextColumn Header="採購性質" Binding="{Binding ProcurementType}" Width="80" MinWidth="70" />
+                    <DataGridTextColumn Header="公告日期" Binding="{Binding AnnouncementDate}" Width="90" MinWidth="80" />
+                    <DataGridTextColumn Header="截止投標" Binding="{Binding BidDeadline}" Width="90" MinWidth="80" />
+                    <DataGridTextColumn Header="預算金額" Binding="{Binding BudgetAmount, StringFormat='{}{0:N0}'}" Width="120" MinWidth="100">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Right" />
@@ -536,7 +538,7 @@
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="命中關鍵字"
                                         Binding="{Binding MatchedKeywords, Converter={StaticResource ListJoinConverter}}"
-                                        Width="180" />
+                                        Width="180" MinWidth="140" />
                 </DataGrid.Columns>
             </DataGrid>
 

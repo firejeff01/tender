@@ -1,0 +1,29 @@
+<Window x:Class="Tender.Desktop.Views.PrintPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="列印預覽"
+        Height="820" Width="1180"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgMainBrush}"
+        FontFamily="Microsoft JhengHei UI">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="10,8"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="🖨 列印..." Click="Print_Click"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Padding="20,5" Margin="0,0,8,0" />
+                <Button Content="關閉" Click="Close_Click"
+                        Padding="20,5" IsCancel="True" />
+                <TextBlock Text="（捲動瀏覽 / 滑鼠滾輪縮放）" VerticalAlignment="Center"
+                           Margin="14,0,0,0"
+                           Foreground="{StaticResource TextMutedBrush}" FontSize="11" />
+            </StackPanel>
+        </Border>
+        <FlowDocumentReader x:Name="Reader"
+                            ViewingMode="Page"
+                            Background="{StaticResource BgSubtleBrush}" />
+    </DockPanel>
+</Window>

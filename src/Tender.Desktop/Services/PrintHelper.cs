@@ -4,28 +4,23 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Tender.Desktop.ViewModels;
+using Tender.Desktop.Views;
 
 namespace Tender.Desktop.Services;
 
 /// <summary>
-/// 把 TenderItemViewModel 集合產出 FlowDocument 並透過 PrintDialog 列印。
+/// 把 TenderItemViewModel 集合產出 FlowDocument 並透過列印預覽視窗送印。
 /// </summary>
 public static class PrintHelper
 {
     public static void Print(IReadOnlyList<TenderItemViewModel> items, string title)
     {
-        var dlg = new System.Windows.Controls.PrintDialog();
-        if (dlg.ShowDialog() != true) return;
-
         var doc = BuildFlowDocument(items, title);
-        doc.PageHeight = dlg.PrintableAreaHeight;
-        doc.PageWidth = dlg.PrintableAreaWidth;
-        doc.PagePadding = new Thickness(40);
-        doc.ColumnGap = 0;
-        doc.ColumnWidth = double.PositiveInfinity;
-
-        IDocumentPaginatorSource src = doc;
-        dlg.PrintDocument(src.DocumentPaginator, title);
+        var window = new PrintPreviewWindow(doc, title)
+        {
+            Owner = Application.Current?.MainWindow,
+        };
+        window.ShowDialog();
     }
 
     private static FlowDocument BuildFlowDocument(IReadOnlyList<TenderItemViewModel> items, string title)
@@ -60,12 +55,14 @@ public static class PrintHelper
             BorderBrush = Brushes.Gray,
             BorderThickness = new Thickness(0.5),
         };
-        table.Columns.Add(new TableColumn { Width = new GridLength(150) });   // 機關
-        table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) }); // 標案名稱
-        table.Columns.Add(new TableColumn { Width = new GridLength(80) });    // 招標方式
-        table.Columns.Add(new TableColumn { Width = new GridLength(80) });    // 公告日期
-        table.Columns.Add(new TableColumn { Width = new GridLength(80) });    // 截止
-        table.Columns.Add(new TableColumn { Width = new GridLength(90) });    // 預算
+        // FlowDocument Table 不支援 GridUnitType.Star，所有欄位需用固定 px。
+        // 總和約 690 px，配 A4 縱向頁寬 793.92 - PagePadding 80 = 713.92 可用區域。
+        table.Columns.Add(new TableColumn { Width = new GridLength(120) });   // 機關名稱
+        table.Columns.Add(new TableColumn { Width = new GridLength(255) });   // 標案名稱（最長）
+        table.Columns.Add(new TableColumn { Width = new GridLength(70) });    // 招標方式
+        table.Columns.Add(new TableColumn { Width = new GridLength(70) });    // 公告日期
+        table.Columns.Add(new TableColumn { Width = new GridLength(70) });    // 截止投標
+        table.Columns.Add(new TableColumn { Width = new GridLength(95) });    // 預算金額
 
         // 表頭
         var headerGroup = new TableRowGroup();
