@@ -211,13 +211,17 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
                     <TextBlock Text="預算：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-                    <TextBox Text="{Binding BudgetMin, TargetNullValue='', UpdateSourceTrigger=LostFocus}"
+                    <TextBox Text="{Binding BudgetMin, TargetNullValue='', UpdateSourceTrigger=PropertyChanged, Delay=400}"
                              Width="110" Height="28" Margin="4,0,4,0" VerticalContentAlignment="Center"
-                             ToolTip="最低金額（空白表示不限）" />
+                             ToolTip="最低金額（只接受純數字，空白表示不限）"
+                             PreviewTextInput="DigitsOnly_PreviewTextInput"
+                             DataObject.Pasting="DigitsOnly_Pasting" />
                     <TextBlock Text="~" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
-                    <TextBox Text="{Binding BudgetMax, TargetNullValue='', UpdateSourceTrigger=LostFocus}"
+                    <TextBox Text="{Binding BudgetMax, TargetNullValue='', UpdateSourceTrigger=PropertyChanged, Delay=400}"
                              Width="110" Height="28" Margin="4,0,0,0" VerticalContentAlignment="Center"
-                             ToolTip="最高金額（空白表示不限）" />
+                             ToolTip="最高金額（只接受純數字，空白表示不限）"
+                             PreviewTextInput="DigitsOnly_PreviewTextInput"
+                             DataObject.Pasting="DigitsOnly_Pasting" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,16,4">

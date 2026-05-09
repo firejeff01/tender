@@ -277,7 +277,7 @@ public partial class DailyQueryViewModel : ObservableObject
             SelectedProcurementType = "（不限）";
     }
 
-    private async void OnMarkChangedAsync(TenderItemViewModel vm)
+    private async void OnMarkChangedAsync(TenderItemViewModel vm, string propertyName)
     {
         _userMarks[vm.SourcePk] = new UserMark
         {
@@ -288,13 +288,13 @@ public partial class DailyQueryViewModel : ObservableObject
             Note = vm.Note ?? string.Empty,
         };
 
-        // 批次操作期間，跳過 disk write 與 filter 重算，避免 N 次並發寫檔 + N² 次 filter
+        // 批次操作期間，跳過 disk write，由批次結束後統一寫檔
         if (_suppressMarkSideEffects) return;
 
         await PersistUserMarksAsync();
 
-        // 任何 mark 變動都可能影響當前篩選結果
-        ApplyFilter();
+        // 故意不在此呼叫 ApplyFilter — 篩選結果是 snapshot，
+        // 只在使用者操作上方篩選控制項時重算，資料 mark 變動不重算。
     }
 
     private async Task PersistUserMarksAsync()
@@ -338,7 +338,7 @@ public partial class DailyQueryViewModel : ObservableObject
 
     private async Task BatchToggleReadAsync(bool targetState)
     {
-        // 暫停 side-effect，避免每筆都觸發 disk write + ApplyFilter
+        // 暫停 side-effect，避免每筆都觸發 disk write
         _suppressMarkSideEffects = true;
         try
         {
@@ -350,9 +350,8 @@ public partial class DailyQueryViewModel : ObservableObject
             _suppressMarkSideEffects = false;
         }
 
-        // 統一寫檔一次 + 重算一次篩選
+        // 統一寫檔一次；不重算篩選 (snapshot 模式)
         await PersistUserMarksAsync();
-        ApplyFilter();
     }
 
     [RelayCommand]
@@ -485,6 +484,13 @@ public partial class DailyQueryViewModel : ObservableObject
         _ = LoadCommand.ExecuteAsync(null);
     }
     partial void OnDateChanged(DateOnly value) => OnPropertyChanged(nameof(IsRangeMode));
+    partial void OnSelectedItemChanged(TenderItemViewModel? value)
+    {
+        // 點選任一列即視為已讀；snapshot 模式下不會觸發重新篩選，
+        // 即便「只看未讀」開著，被點過的列也會留在當前快照裡，下次動到上方篩選才會消失。
+        if (value is not null && !value.IsRead)
+            value.IsRead = true;
+    }
     partial void OnSelectedTenderMethodChanged(string? value) => ApplyFilter();
     partial void OnSelectedProcurementTypeChanged(string? value) => ApplyFilter();
     partial void OnBudgetMinChanged(long? value) => ApplyFilter();

@@ -34,7 +34,7 @@ public partial class TenderItemViewModel : ObservableObject
     public string DetailUrl => Item.DetailUrl;
     public IReadOnlyList<string> MatchedKeywords => Item.MatchedKeywords;
 
-    public event Action<TenderItemViewModel>? MarkChanged;
+    public event Action<TenderItemViewModel, string>? MarkChanged;
 
     public TenderItemViewModel(TenderItem item, UserMark? mark = null)
     {
@@ -45,8 +45,8 @@ public partial class TenderItemViewModel : ObservableObject
         _note = mark?.Note ?? string.Empty;
     }
 
-    partial void OnIsFavoriteChanged(bool value) => MarkChanged?.Invoke(this);
-    partial void OnIsReadChanged(bool value) => MarkChanged?.Invoke(this);
-    partial void OnIsExcludedChanged(bool value) => MarkChanged?.Invoke(this);
-    partial void OnNoteChanged(string value) => MarkChanged?.Invoke(this);
+    partial void OnIsFavoriteChanged(bool value) => MarkChanged?.Invoke(this, nameof(IsFavorite));
+    partial void OnIsReadChanged(bool value) => MarkChanged?.Invoke(this, nameof(IsRead));
+    partial void OnIsExcludedChanged(bool value) => MarkChanged?.Invoke(this, nameof(IsExcluded));
+    partial void OnNoteChanged(string value) => MarkChanged?.Invoke(this, nameof(Note));
 }

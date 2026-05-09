@@ -29,4 +29,26 @@ public partial class DailyQueryView : UserControl
             PrintHelper.Print(items, title);
         }
     }
+
+    private void DigitsOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // 只接受 0-9
+        foreach (var ch in e.Text)
+        {
+            if (ch < '0' || ch > '9') { e.Handled = true; return; }
+        }
+    }
+
+    private void DigitsOnly_Pasting(object sender, System.Windows.DataObjectPastingEventArgs e)
+    {
+        if (e.SourceDataObject.GetData(System.Windows.DataFormats.UnicodeText) is not string text)
+        {
+            e.CancelCommand();
+            return;
+        }
+        foreach (var ch in text)
+        {
+            if (ch < '0' || ch > '9') { e.CancelCommand(); return; }
+        }
+    }
 }
