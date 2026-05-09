@@ -104,7 +104,7 @@ public sealed class CrawlerLauncher : ICrawlerLauncher
     ///   2. 兄弟資料夾 ../crawler/Tender.Crawler.exe（MSI 安裝結構）
     ///   3. dev 環境相對路徑
     /// </summary>
-    private static string? FindCrawlerExe()
+    public static string? FindCrawlerExe()
     {
         var baseDir = AppContext.BaseDirectory;
 

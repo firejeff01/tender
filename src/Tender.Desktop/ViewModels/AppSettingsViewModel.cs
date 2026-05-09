@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Tender.Core.Constants;
 using Tender.Core.Models;
+using Tender.Desktop.Services;
 using Tender.Storage.Repositories;
 
 namespace Tender.Desktop.ViewModels;
@@ -105,10 +106,6 @@ public partial class AppSettingsViewModel : ObservableObject
                 return;
             }
 
-            // 偵測排程時間是否變更，若有變更則嘗試同步 Task Scheduler
-            var oldSettings = await _repo.LoadAsync(ct);
-            var scheduledTimeChanged = oldSettings.ScheduledTime != ScheduledTime;
-
             var s = new AppSettings
             {
                 ScheduledTime = ScheduledTime,
@@ -121,17 +118,11 @@ public partial class AppSettingsViewModel : ObservableObject
             await _repo.SaveAsync(s, ct);
             HasUnsavedChanges = false;
 
-            if (scheduledTimeChanged)
-            {
-                var taskUpdated = TryUpdateScheduledTask(ScheduledTime);
-                StatusMessage = taskUpdated
-                    ? $"儲存成功，排程時間已更新為 {ScheduledTime}"
-                    : $"儲存成功，但更新 Task Scheduler 失敗（任務可能不存在或無權限），請手動執行「建立每日排程」捷徑";
-            }
-            else
-            {
-                StatusMessage = "儲存成功";
-            }
+            // 同步 Task Scheduler：不存在就建立、已存在就以新時間覆寫（/Create /F 同時涵蓋兩種情況）
+            var taskOk = TryCreateOrUpdateScheduledTask(ScheduledTime);
+            StatusMessage = taskOk
+                ? $"儲存成功，每日排程已設定為 {ScheduledTime}"
+                : $"儲存成功，但建立排程失敗（可能找不到 Crawler 執行檔或權限不足）";
         }
         catch (Exception ex)
         {
@@ -140,17 +131,24 @@ public partial class AppSettingsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 透過 schtasks /Change 修改既有任務的觸發時間。
-    /// 若任務不存在 / 沒權限會回傳 false。
+    /// 用 schtasks /Create /F 建立或覆寫每日排程任務。
+    /// 屬於使用者層級任務（以目前登入帳號身份執行），不需 admin 權限。
     /// </summary>
-    private static bool TryUpdateScheduledTask(string hhmm)
+    private static bool TryCreateOrUpdateScheduledTask(string hhmm)
     {
+        var crawlerExe = CrawlerLauncher.FindCrawlerExe();
+        if (crawlerExe is null) return false;
+
         try
         {
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "schtasks.exe",
-                Arguments = $"/Change /TN \"TenderSearch.DailyCrawl\" /ST {hhmm}",
+                // /F = force overwrite，效果等於 create-or-update
+                Arguments =
+                    $"/Create /SC DAILY /TN \"TenderSearch.DailyCrawl\" " +
+                    $"/TR \"\\\"{crawlerExe}\\\" --mode scheduled\" " +
+                    $"/ST {hhmm} /F",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
