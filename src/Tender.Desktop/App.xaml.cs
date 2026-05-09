@@ -69,6 +69,7 @@ public partial class App : Application
         services.AddSingleton<IExcelExporter, ClosedXmlExcelExporter>();
         services.AddSingleton<ISaveFileDialogService, WpfSaveFileDialogService>();
         services.AddSingleton<IErrorSummaryDialog, WpfErrorSummaryDialog>();
+        services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();
 
         // ViewModels
         services.AddSingleton<MonthlyCalendarViewModel>();
@@ -85,7 +86,9 @@ public partial class App : Application
                 sp.GetRequiredService<IDataPaths>(),
                 sp.GetRequiredService<IDailySummaryRepository>(),
                 () => sp.GetRequiredService<KeywordsManageWindow>(),
-                () => sp.GetRequiredService<AppSettingsWindow>()));
+                () => sp.GetRequiredService<AppSettingsWindow>(),
+                sp.GetRequiredService<IUpdateChecker>(),
+                sp.GetRequiredService<IBrowserLauncher>()));
 
         // Windows
         services.AddSingleton<ShellWindow>();

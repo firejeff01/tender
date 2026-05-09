@@ -59,7 +59,8 @@ if ($LASTEXITCODE -ne 0) { throw "Crawler publish failed" }
 Write-Host "[2/3] Publishing Tender.Desktop..." -ForegroundColor Yellow
 & dotnet publish (Join-Path $repoRoot 'src\Tender.Desktop\Tender.Desktop.csproj') `
     -c $Configuration -r win-x64 --self-contained $selfContainedFlag `
-    -o (Join-Path $pubRoot 'desktop') --nologo --verbosity quiet
+    -o (Join-Path $pubRoot 'desktop') --nologo --verbosity quiet `
+    -p:Version=$Version -p:AssemblyVersion=$Version -p:FileVersion=$Version
 if ($LASTEXITCODE -ne 0) { throw "Desktop publish failed" }
 
 Write-Host "[3/3] Building MSI (version $Version)..." -ForegroundColor Yellow

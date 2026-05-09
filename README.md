@@ -212,6 +212,50 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 
 ---
 
+## 發版流程（給維護者）
+
+每次釋出新版的標準步驟：
+
+1. **本機建置 MSI**
+   ```powershell
+   .\build\build-msi.ps1
+   ```
+   腳本會自動產生時間版本號，例如 `1.1.509.1730`，寫入：
+   - MSI 的 `ProductVersion`
+   - Desktop exe 的 `AssemblyVersion`、`FileVersion`
+   - 觀察輸出最後 `Version: x.y.z.w` 那行
+
+2. **commit & push 到 GitHub**
+   ```powershell
+   git add -A
+   git commit -m "Release v1.1.509.1730"
+   git push
+   ```
+
+3. **在 GitHub 開新 Release**
+   - 打開 <https://github.com/firejeff01/tender/releases/new>
+   - **Tag**：填 `v1.1.509.1730`（注意前面的 v）
+   - **Title**：`v1.1.509.1730` 或描述
+   - **Description**：寫此版改了什麼
+   - **Attach files** 區塊：拖上去 `dist\TenderSearch.msi`
+   - 按「Publish release」
+
+4. **使用者下次開 app**：
+   - 啟動時背景呼叫 GitHub API
+   - 偵測到 GitHub 上的 tag 版本 > 本機 assembly 版本
+   - 工具列下方出現黃色 banner：「🆕 有新版本可下載：1.1.509.1730（目前 v1.0.0.0）  點此下載 →」
+   - 使用者點 banner → 預設瀏覽器自動開 MSI 下載連結
+   - 下載完雙擊 → MajorUpgrade 自動覆蓋
+
+### 更新檢查機制
+
+- 程式啟動時於背景呼叫 `https://api.github.com/repos/firejeff01/tender/releases/latest`
+- 若失敗（無網路、私有 repo 沒授權、API rate limit）→ 靜默失敗，不影響主程式
+- 比對版本：當前 assembly 版本 vs tag 解析出的 Version
+- 不會自動下載，僅顯示提示讓使用者主動點選
+
+---
+
 ## 授權
 
 本軟體為內部使用工具，無對外授權聲明。

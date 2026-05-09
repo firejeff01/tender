@@ -136,6 +136,36 @@
             </DockPanel>
         </Border>
 
+        <!-- 更新提示 banner（IsUpdateAvailable=true 時顯示） -->
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource WarningLightBrush}"
+                BorderBrush="{StaticResource WarningBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="14,8"
+                Visibility="{Binding IsUpdateAvailable, Converter={StaticResource BoolToVis}}"
+                Cursor="Hand">
+            <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenUpdatePageCommand}" />
+            </Border.InputBindings>
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource TextPrimaryBrush}">
+                    <Run Text="🆕" FontSize="14" />
+                    <Run Text=" 有新版本可下載：" />
+                    <Run Text="{Binding UpdateInfo.LatestVersion, FallbackValue=''}" FontWeight="Bold" />
+                    <Run Text=" （目前 v" />
+                    <Run Text="{Binding UpdateInfo.CurrentVersion, FallbackValue=''}" />
+                    <Run Text="）" />
+                </TextBlock>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="點此下載 →"
+                           VerticalAlignment="Center"
+                           Foreground="{StaticResource WarningBrush}"
+                           FontWeight="SemiBold" />
+            </DockPanel>
+        </Border>
+
         <!-- 中央內容 -->
         <ContentControl>
             <ContentControl.Style>

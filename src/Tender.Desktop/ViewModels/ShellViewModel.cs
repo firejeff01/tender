@@ -18,6 +18,8 @@ public partial class ShellViewModel : ObservableObject
     private readonly IDailySummaryRepository _summaryRepo;
     private readonly Func<Window> _keywordsManagerFactory;
     private readonly Func<Window> _appSettingsFactory;
+    private readonly IUpdateChecker _updateChecker;
+    private readonly IBrowserLauncher _browser;
 
     public MonthlyCalendarViewModel CalendarVm { get; }
 
@@ -37,6 +39,13 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isTodayCrawled;
 
+    /// <summary>GitHub 上是否有更新版本可下載。</summary>
+    [ObservableProperty]
+    private bool _isUpdateAvailable;
+
+    [ObservableProperty]
+    private UpdateInfo? _updateInfo;
+
     public bool IsDailyQueryVisible => CurrentDailyQueryVm != null;
 
     public ShellViewModel(
@@ -48,7 +57,9 @@ public partial class ShellViewModel : ObservableObject
         IDataPaths dataPaths,
         IDailySummaryRepository summaryRepo,
         Func<Window> keywordsManagerFactory,
-        Func<Window> appSettingsFactory)
+        Func<Window> appSettingsFactory,
+        IUpdateChecker updateChecker,
+        IBrowserLauncher browser)
     {
         CalendarVm = calendarVm;
         _dailyVmFactory = dailyVmFactory;
@@ -59,6 +70,16 @@ public partial class ShellViewModel : ObservableObject
         _summaryRepo = summaryRepo;
         _keywordsManagerFactory = keywordsManagerFactory;
         _appSettingsFactory = appSettingsFactory;
+        _updateChecker = updateChecker;
+        _browser = browser;
+    }
+
+    [RelayCommand]
+    private void OpenUpdatePage()
+    {
+        var url = UpdateInfo?.DownloadUrl ?? UpdateInfo?.ReleasePageUrl;
+        if (!string.IsNullOrEmpty(url))
+            _browser.Open(url);
     }
 
     [RelayCommand]
@@ -93,8 +114,23 @@ public partial class ShellViewModel : ObservableObject
         // 載入行事曆（快速）
         await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
 
-        // 背景檢查 missed run，不阻擋 UI
+        // 背景檢查 missed run、更新檢查（不阻擋 UI）
         _ = CheckMissedRunInBackgroundAsync(ct);
+        _ = CheckUpdateInBackgroundAsync(ct);
+    }
+
+    private async Task CheckUpdateInBackgroundAsync(CancellationToken ct)
+    {
+        try
+        {
+            var info = await _updateChecker.CheckAsync(ct);
+            UpdateInfo = info;
+            IsUpdateAvailable = info.IsUpdateAvailable;
+        }
+        catch
+        {
+            // 更新檢查失敗不影響主功能
+        }
     }
 
     private async Task RefreshTodayCrawledAsync(CancellationToken ct)
