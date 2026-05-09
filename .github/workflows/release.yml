@@ -1,4 +1,4 @@
-name: Build MSI
+name: Build and Release MSI
 
 # 觸發時機：push 到 main 分支
 on:
@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write   # 建立 Release + 上傳 asset 需要
 
 jobs:
   build:
@@ -26,6 +26,22 @@ jobs:
         shell: pwsh
         run: dotnet tool install --global wix --version 5.0.2
 
+      - name: Generate version from current time
+        id: ver
+        shell: pwsh
+        run: |
+          # 與 build-msi.ps1 同一套邏輯：1.{year-2025}.{MMDD}.{HHmm}
+          $now = Get-Date
+          $minor = $now.Year - 2025
+          $build = $now.Month * 100 + $now.Day
+          $rev = $now.Hour * 100 + $now.Minute
+          $version = "1.$minor.$build.$rev"
+          $tag = "v$version"
+          Write-Host "Version: $version"
+          Write-Host "Tag: $tag"
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          echo "tag=$tag"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
       - name: Restore
         run: dotnet restore Tender.slnx
 
@@ -38,7 +54,7 @@ jobs:
 
       - name: Build MSI
         shell: pwsh
-        run: .\build\build-msi.ps1
+        run: .\build\build-msi.ps1 -Version "${{ steps.ver.outputs.version }}"
 
       - name: Verify MSI exists
         shell: pwsh
@@ -47,9 +63,10 @@ jobs:
           $size = (Get-Item "dist\TenderSearch.msi").Length / 1MB
           Write-Host ("MSI size: {0:N1} MB" -f $size)
 
-      - name: Upload MSI as artifact
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release with MSI asset
+        uses: softprops/action-gh-release@v2
         with:
-          name: TenderSearch-MSI
-          path: dist/TenderSearch.msi
-          retention-days: 30
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: dist/TenderSearch.msi
