@@ -1,13 +1,13 @@
-name: Build and Release MSI
+name: Build MSI
 
-# 觸發時機：push 帶 v 開頭的 tag（例：v1.2.509.1730）
+# 觸發時機：push 到 main 分支
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
-  contents: write   # 必要，建立 Release + 上傳 asset
+  contents: read
 
 jobs:
   build:
@@ -26,17 +26,6 @@ jobs:
         shell: pwsh
         run: dotnet tool install --global wix --version 5.0.2
 
-      - name: Determine version from tag
-        id: ver
-        shell: pwsh
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $version = $tag -replace '^v', ''
-          Write-Host "Tag: $tag"
-          Write-Host "Version: $version"
-          echo "tag=$tag"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
       - name: Restore
         run: dotnet restore Tender.slnx
 
@@ -49,8 +38,7 @@ jobs:
 
       - name: Build MSI
         shell: pwsh
-        run: |
-          .\build\build-msi.ps1 -Version "${{ steps.ver.outputs.version }}"
+        run: .\build\build-msi.ps1
 
       - name: Verify MSI exists
         shell: pwsh
@@ -59,11 +47,9 @@ jobs:
           $size = (Get-Item "dist\TenderSearch.msi").Length / 1MB
           Write-Host ("MSI size: {0:N1} MB" -f $size)
 
-      - name: Create GitHub Release with MSI asset
-        uses: softprops/action-gh-release@v2
+      - name: Upload MSI as artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          name: ${{ steps.ver.outputs.tag }}
-          generate_release_notes: true
-          files: |
-            dist/TenderSearch.msi
+          name: TenderSearch-MSI
+          path: dist/TenderSearch.msi
+          retention-days: 30
