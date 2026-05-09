@@ -16,10 +16,17 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
+    # 預設 self-contained（含 .NET 8 runtime，~80MB，使用者不用先裝 runtime）。
+    # 加 -Slim 改成 framework-dependent（~5MB，但使用者要先裝 .NET 8 Desktop Runtime）。
+    [switch]$Slim,
+    # 舊參數，保留向下相容（與 Slim 相反義）
     [switch]$SelfContained,
     # 強制指定版本號；省略時自動依目前時間產生 1.{year-2025}.{MMDD}.{HHmm}
     [string]$Version
 )
+
+# 決定 self-contained：預設 true，-Slim 才轉成 false
+$useSelfContained = -not $Slim
 
 $ErrorActionPreference = 'Stop'
 
@@ -39,7 +46,7 @@ if (-not $Version) {
 Write-Host "=== TenderSearch MSI Build ===" -ForegroundColor Cyan
 Write-Host "Repo: $repoRoot"
 Write-Host "Configuration: $Configuration"
-Write-Host "SelfContained: $SelfContained"
+Write-Host ("Mode: {0}" -f $(if ($useSelfContained) { 'self-contained (含 .NET 8 runtime, ~80MB)' } else { 'framework-dependent (slim, ~5MB)' }))
 Write-Host "Version: $Version"
 
 # Step 1: Clean publish/dist
@@ -47,7 +54,7 @@ if (Test-Path $pubRoot) { Remove-Item $pubRoot -Recurse -Force }
 if (-not (Test-Path $distRoot)) { New-Item -ItemType Directory -Path $distRoot | Out-Null }
 
 # Step 2: Publish projects
-$selfContainedFlag = if ($SelfContained) { 'true' } else { 'false' }
+$selfContainedFlag = if ($useSelfContained) { 'true' } else { 'false' }
 
 Write-Host ""
 Write-Host "[1/3] Publishing Tender.Crawler..." -ForegroundColor Yellow

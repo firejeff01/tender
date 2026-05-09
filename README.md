@@ -19,9 +19,8 @@
 ### 系統需求
 
 - **作業系統**：Windows 10/11 (x64)
-- **執行環境**：.NET 8 Desktop Runtime（`TenderSearch.msi` 為 framework-dependent，需先安裝 runtime）
-  - 下載：<https://dotnet.microsoft.com/download/dotnet/8.0/runtime>
-  - 或建置 self-contained MSI：`.\build\build-msi.ps1 -SelfContained`（檔案會變大到 ~80MB）
+- **執行環境**：**無需另外安裝**。MSI 預設為 self-contained，內含 .NET 8 Desktop Runtime。
+  - 若要建小體積版（需使用者另外裝 .NET 8 runtime）：`.\build\build-msi.ps1 -Slim`
 
 ---
 
@@ -253,8 +252,8 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 如果只想本機測試 build 是否正常、不發版：
 
 ```powershell
-.\build\build-msi.ps1                       # 自動產生時間版本號
-.\build\build-msi.ps1 -SelfContained        # 含 .NET 8 runtime（~80MB）
+.\build\build-msi.ps1                       # 自動產生時間版本號（預設 self-contained ~80MB）
+.\build\build-msi.ps1 -Slim                 # framework-dependent ~5MB（需使用者已裝 .NET 8）
 .\build\build-msi.ps1 -Version "1.0.0.0"   # 強制指定版本（測試降版）
 ```
 
