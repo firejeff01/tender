@@ -28,6 +28,7 @@ public interface IDataPaths
 
     string UserMarksFile { get; }
     string AppSettingsFile { get; }
+    string SavedSearchesFile { get; }
 
     /// <summary>data/locks/crawler.lock，防重複執行。</summary>
     string CrawlerLockFile { get; }

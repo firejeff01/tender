@@ -10,6 +10,8 @@
         <conv:ListJoinConverter x:Key="ListJoinConverter" />
         <conv:ColorStringToColorConverter x:Key="ColorStringToColor" />
         <conv:SortLabelConverter x:Key="SortLabel" />
+        <conv:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTime" />
+        <conv:ZeroToVisibilityConverter x:Key="ZeroToVis" />
 
         <x:Array x:Key="SortKeyOptions" Type="{x:Type search:SortKey}">
             <search:SortKey>None</search:SortKey>
@@ -138,6 +140,17 @@
                            FontSize="20" FontWeight="Bold"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            VerticalAlignment="Center" />
+
+                <!-- 跨日範圍：可選 DateTo -->
+                <TextBlock Text="～" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"
+                           VerticalAlignment="Center" Margin="8,0,8,0" />
+                <DatePicker SelectedDate="{Binding DateTo, Converter={StaticResource DateOnlyToDateTime}}"
+                            Width="140" Height="30" VerticalAlignment="Center"
+                            ToolTip="設定跨日查詢迄止日（空白＝只查 Date 一天）" />
+                <Button Content="✖" Command="{Binding ClearDateRangeCommand}"
+                        Padding="6,3" Margin="2,0,0,0" FontSize="11"
+                        ToolTip="清除跨日範圍" />
+
                 <TextBlock Margin="20,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}">
                     <TextBlock.Text>
                         <MultiBinding StringFormat="顯示 {0:N0} / 共 {1:N0} 筆">
@@ -221,10 +234,140 @@
                           Foreground="{StaticResource TextPrimaryBrush}" />
 
                 <CheckBox Content="⭐ 只看收藏" IsChecked="{Binding ShowFavoritesOnly}"
-                          VerticalAlignment="Center" Margin="0,0,16,4"
+                          VerticalAlignment="Center" Margin="0,0,12,4"
                           Foreground="{StaticResource TextPrimaryBrush}" />
 
-                <Button Content="🧹 清除全部篩選" Command="{Binding ClearAllFiltersCommand}" Padding="10,5" Margin="0,0,0,4" />
+                <CheckBox Content="📬 只看未讀" IsChecked="{Binding ShowUnreadOnly}"
+                          VerticalAlignment="Center" Margin="0,0,12,4"
+                          Foreground="{StaticResource TextPrimaryBrush}" />
+
+                <CheckBox Content="🚫 顯示已排除" IsChecked="{Binding ShowExcluded}"
+                          VerticalAlignment="Center" Margin="0,0,16,4"
+                          Foreground="{StaticResource TextPrimaryBrush}"
+                          ToolTip="預設不顯示已標記排除的標案" />
+
+                <Button Content="🧹 清除全部篩選" Command="{Binding ClearAllFiltersCommand}" Padding="10,5" Margin="0,0,8,4" />
+
+                <!-- 批次標記下拉 -->
+                <Grid Margin="0,0,8,4">
+                    <ToggleButton x:Name="batchMarkToggle" Padding="10,5" Cursor="Hand">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="bm" Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource BorderStrongBrush}"
+                                        BorderThickness="1" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bm" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="bm" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📋 批次標記" />
+                            <TextBlock Text=" ▾" Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <Popup IsOpen="{Binding IsChecked, ElementName=batchMarkToggle, Mode=TwoWay}"
+                           PlacementTarget="{Binding ElementName=batchMarkToggle}" Placement="Bottom"
+                           StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                        <Border Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource BorderStrongBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,4,0,0" MinWidth="200">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#5C4A2E" BlurRadius="10" ShadowDepth="2" Opacity="0.2" />
+                            </Border.Effect>
+                            <StackPanel>
+                                <TextBlock Text="套用於目前篩選結果" Foreground="{StaticResource TextMutedBrush}"
+                                           FontSize="11" Margin="6,4,6,6" />
+                                <Button Content="📭 全部標記為已讀"
+                                        Command="{Binding MarkAllAsReadCommand}"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="12,6" Margin="0,1" />
+                                <Button Content="📬 全部標記為未讀"
+                                        Command="{Binding MarkAllAsUnreadCommand}"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="12,6" Margin="0,1" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <!-- 儲存搜尋條件 popup -->
+                <Grid Margin="0,0,0,4">
+                    <ToggleButton x:Name="savedSearchToggle" Padding="10,5" Cursor="Hand">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="b" Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource BorderStrongBrush}"
+                                        BorderThickness="1" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="b" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="b" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔖 儲存搜尋" />
+                            <TextBlock Text=" ▾" Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <Popup IsOpen="{Binding IsChecked, ElementName=savedSearchToggle, Mode=TwoWay}"
+                           PlacementTarget="{Binding ElementName=savedSearchToggle}" Placement="Bottom"
+                           StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                        <Border Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource BorderStrongBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,4,0,0" MinWidth="280">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#5C4A2E" BlurRadius="10" ShadowDepth="2" Opacity="0.2" />
+                            </Border.Effect>
+                            <StackPanel>
+                                <TextBlock Text="儲存目前條件為..." FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="💾 存"
+                                            Command="{Binding SaveCurrentSearchCommand}"
+                                            CommandParameter="{Binding ElementName=newSearchName, Path=Text}"
+                                            Padding="8,3" Margin="6,0,0,0" />
+                                    <TextBox x:Name="newSearchName" Height="28" VerticalContentAlignment="Center" />
+                                </DockPanel>
+                                <Separator Margin="0,8" />
+                                <TextBlock Text="已儲存的條件" FontWeight="SemiBold" Margin="0,0,0,4" />
+                                <ItemsControl ItemsSource="{Binding SavedSearches}" MaxHeight="240">
+                                    <ItemsControl.Template>
+                                        <ControlTemplate>
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <ItemsPresenter />
+                                            </ScrollViewer>
+                                        </ControlTemplate>
+                                    </ItemsControl.Template>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,2">
+                                                <Button DockPanel.Dock="Right" Content="✖"
+                                                        Command="{Binding DataContext.DeleteSavedSearchCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="6,2" FontSize="11" Margin="2,0,0,0" />
+                                                <Button Content="{Binding Name}"
+                                                        Command="{Binding DataContext.ApplySavedSearchCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        HorizontalContentAlignment="Left" Padding="8,4" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="（無儲存條件）" Foreground="{StaticResource TextMutedBrush}"
+                                           Visibility="{Binding SavedSearches.Count, Converter={StaticResource ZeroToVis}, ConverterParameter=Inverse}" />
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
             </WrapPanel>
         </Border>
 
@@ -265,8 +408,9 @@
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="*" MinWidth="600" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="300" MinWidth="240" MaxWidth="500" />
             </Grid.ColumnDefinitions>
 
             <DataGrid Grid.Column="0"
@@ -310,23 +454,61 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="★" Width="36" SortMemberPath="IsFavorite">
+                    <!-- ★ 收藏 -->
+                    <DataGridTemplateColumn Header="★" Width="32" SortMemberPath="IsFavorite">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsFavorite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          ToolTip="收藏">
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="收藏">
                                     <CheckBox.Template>
                                         <ControlTemplate TargetType="CheckBox">
-                                            <TextBlock x:Name="star" Text="☆" FontSize="16" Foreground="{StaticResource TextMutedBrush}"
-                                                       Cursor="Hand" />
+                                            <TextBlock x:Name="star" Text="☆" FontSize="16" Foreground="{StaticResource TextMutedBrush}" Cursor="Hand" />
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsChecked" Value="True">
                                                     <Setter TargetName="star" Property="Text" Value="★" />
                                                     <Setter TargetName="star" Property="Foreground" Value="{StaticResource PrimaryBrush}" />
                                                 </Trigger>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="star" Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </CheckBox.Template>
+                                </CheckBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <!-- 已讀 -->
+                    <DataGridTemplateColumn Header="📬" Width="32" SortMemberPath="IsRead">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsRead, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="已讀">
+                                    <CheckBox.Template>
+                                        <ControlTemplate TargetType="CheckBox">
+                                            <TextBlock x:Name="r" Text="●" FontSize="14" Foreground="{StaticResource PrimaryBrush}" Cursor="Hand" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="r" Property="Text" Value="○" />
+                                                    <Setter TargetName="r" Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </CheckBox.Template>
+                                </CheckBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <!-- 排除 -->
+                    <DataGridTemplateColumn Header="🚫" Width="32" SortMemberPath="IsExcluded">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsExcluded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="標記排除（預設此後不再顯示，需勾「顯示已排除」才看得到）">
+                                    <CheckBox.Template>
+                                        <ControlTemplate TargetType="CheckBox">
+                                            <TextBlock x:Name="x" Text="✖" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Cursor="Hand" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="x" Property="Foreground" Value="{StaticResource ErrorBrush}" />
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -354,8 +536,19 @@
                 </DataGrid.Columns>
             </DataGrid>
 
+            <!-- 拖曳分隔條：可調整左右寬度 -->
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{StaticResource BorderBrush}"
+                          ShowsPreview="True"
+                          ResizeBehavior="PreviousAndNext"
+                          ResizeDirection="Columns"
+                          Cursor="SizeWE" />
+
             <!-- 詳情面板 -->
-            <Border Grid.Column="1"
+            <Border Grid.Column="2"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0"
                     Background="{StaticResource BgCardBrush}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -411,11 +604,31 @@
                                            TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
                             </Grid>
 
+                            <!-- 標記快速 toggle -->
+                            <Border Background="{StaticResource BgSubtleBrush}" CornerRadius="5" Padding="10,8" Margin="0,18,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="個人標記" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox Content="⭐ 收藏" IsChecked="{Binding SelectedItem.IsFavorite}" Margin="0,0,12,0"
+                                                  Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <CheckBox Content="📬 已讀" IsChecked="{Binding SelectedItem.IsRead}" Margin="0,0,12,0"
+                                                  Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <CheckBox Content="🚫 排除" IsChecked="{Binding SelectedItem.IsExcluded}"
+                                                  Foreground="{StaticResource TextPrimaryBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Text="備註" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4" />
+                                    <TextBox Text="{Binding SelectedItem.Note, UpdateSourceTrigger=LostFocus}"
+                                             AcceptsReturn="True" TextWrapping="Wrap"
+                                             MinHeight="56" MaxHeight="120"
+                                             VerticalScrollBarVisibility="Auto" />
+                                </StackPanel>
+                            </Border>
+
                             <Button Content="🔗 在瀏覽器開啟詳情頁"
                                     Command="{Binding OpenDetailCommand}"
                                     CommandParameter="{Binding SelectedItem}"
                                     Style="{StaticResource PrimaryButtonStyle}"
-                                    Padding="14,7" Margin="0,18,0,0" HorizontalAlignment="Left" />
+                                    Padding="14,7" Margin="0,12,0,0" HorizontalAlignment="Left" />
                         </StackPanel>
                         <TextBlock Text="（從左方點選標案以顯示詳情）"
                                    Foreground="{StaticResource TextMutedBrush}"

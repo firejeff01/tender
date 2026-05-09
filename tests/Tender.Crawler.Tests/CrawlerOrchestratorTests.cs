@@ -30,6 +30,7 @@ public sealed class CrawlerOrchestratorTests : IDisposable
     private readonly CrawlRunLogRepository _crawlRunLogRepo;
     private readonly ErrorLogWriter _errorLogWriter;
     private readonly KeywordsRepository _keywordsRepo;
+    private readonly AppSettingsRepository _settingsRepo;
 
     private readonly Mock<ICrawler> _crawlerMock = new();
     private readonly Mock<ITenderParser> _parserMock = new();
@@ -49,6 +50,7 @@ public sealed class CrawlerOrchestratorTests : IDisposable
         _crawlRunLogRepo = new CrawlRunLogRepository(_dataPaths, _writer);
         _errorLogWriter = new ErrorLogWriter(_dataPaths);
         _keywordsRepo = new KeywordsRepository(_dataPaths, _writer);
+        _settingsRepo = new AppSettingsRepository(_dataPaths, _writer);
 
         // 預設時鐘
         _clockMock.Setup(c => c.Now)
@@ -76,7 +78,8 @@ public sealed class CrawlerOrchestratorTests : IDisposable
             _clockMock.Object,
             _progressMock.Object,
             _keywordsRepo,
-            _dateConverter);
+            _dateConverter,
+            _settingsRepo);
     }
 
     // 建立 N 筆測試標案；announcementDate 採 targetDate 對應的民國格式（如 2026/5/8 → "115/05/08"）。
@@ -488,7 +491,8 @@ public sealed class CrawlerOrchestratorTests : IDisposable
             _clockMock.Object,
             _progressMock.Object,
             _keywordsRepo,
-            _dateConverter);
+            _dateConverter,
+            _settingsRepo);
 
         var run = await orchestrator.RunAsync(new CrawlerArgs { Mode = CrawlerMode.Scheduled, TargetDate = targetDate });
 

@@ -30,8 +30,9 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
     private readonly IProgressReporter _progress;
     private readonly IKeywordsRepository _keywordsRepo;
     private readonly ITaiwanDateConverter _dateConverter;
+    private readonly IAppSettingsRepository _settingsRepo;
 
-    // AppSettings 預設招標方式（若未提供則使用此預設）
+    // 萬一 AppSettings 載入失敗使用此 fallback
     private static readonly IReadOnlyList<string> DefaultTenderMethods = new[]
     {
         "公開招標",
@@ -51,7 +52,8 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
         IClock clock,
         IProgressReporter progress,
         IKeywordsRepository keywordsRepo,
-        ITaiwanDateConverter dateConverter)
+        ITaiwanDateConverter dateConverter,
+        IAppSettingsRepository settingsRepo)
     {
         _crawler = crawler;
         _parser = parser;
@@ -65,6 +67,7 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
         _progress = progress;
         _keywordsRepo = keywordsRepo;
         _dateConverter = dateConverter;
+        _settingsRepo = settingsRepo;
     }
 
     public async Task<CrawlRun> RunAsync(CrawlerArgs args, CancellationToken ct = default)
@@ -106,7 +109,19 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
             keywordSet = new KeywordSet { Groups = Array.Empty<Core.Models.KeywordGroup>() };
         }
 
-        var tenderMethods = DefaultTenderMethods;
+        // 從 AppSettings 讀取要爬的招標方式（使用者可在應用設定中自訂）
+        IReadOnlyList<string> tenderMethods;
+        try
+        {
+            var settings = await _settingsRepo.LoadAsync(ct);
+            tenderMethods = settings.TargetTenderMethods.Count > 0
+                ? settings.TargetTenderMethods
+                : DefaultTenderMethods;
+        }
+        catch
+        {
+            tenderMethods = DefaultTenderMethods;
+        }
 
         try
         {

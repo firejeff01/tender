@@ -201,7 +201,7 @@ public sealed class RepositoryTests : IDisposable
 
         var settings = new AppSettings
         {
-            CrawlerEngine = "playwright",
+            ScheduledTime = "16:30",
             MaxRetries = 5,
             RequestDelayMs = 2000,
         };
@@ -209,7 +209,7 @@ public sealed class RepositoryTests : IDisposable
         await repo.SaveAsync(settings);
         var loaded = await repo.LoadAsync();
 
-        loaded.CrawlerEngine.Should().Be("playwright");
+        loaded.ScheduledTime.Should().Be("16:30");
         loaded.MaxRetries.Should().Be(5);
         loaded.RequestDelayMs.Should().Be(2000);
     }
@@ -219,7 +219,7 @@ public sealed class RepositoryTests : IDisposable
     {
         var repo = new AppSettingsRepository(_paths, _writer);
         var loaded = await repo.LoadAsync();
-        loaded.CrawlerEngine.Should().Be("httpclient");
+        loaded.ScheduledTime.Should().Be("17:00");
         loaded.MaxRetries.Should().Be(3);
     }
 

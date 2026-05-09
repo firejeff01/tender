@@ -34,6 +34,13 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
+        // 先 dispose tray icon 避免殘留
+        try
+        {
+            (_host?.Services.GetService<INotificationService>() as IDisposable)?.Dispose();
+        }
+        catch { }
+
         if (_host != null)
         {
             await _host.StopAsync();
@@ -60,6 +67,7 @@ public partial class App : Application
         services.AddSingleton<IKeywordsRepository, KeywordsRepository>();
         services.AddSingleton<IUserMarksRepository, UserMarksRepository>();
         services.AddSingleton<IAppSettingsRepository, AppSettingsRepository>();
+        services.AddSingleton<ISavedSearchesRepository, SavedSearchesRepository>();
 
         // Desktop services
         services.AddSingleton<IMonthlyCalendarService, MonthlyCalendarService>();
@@ -70,6 +78,8 @@ public partial class App : Application
         services.AddSingleton<ISaveFileDialogService, WpfSaveFileDialogService>();
         services.AddSingleton<IErrorSummaryDialog, WpfErrorSummaryDialog>();
         services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();
+        services.AddSingleton<IDataCleanupService, DataCleanupService>();
+        services.AddSingleton<INotificationService, NotificationService>();
 
         // ViewModels
         services.AddSingleton<MonthlyCalendarViewModel>();
@@ -88,7 +98,9 @@ public partial class App : Application
                 () => sp.GetRequiredService<KeywordsManageWindow>(),
                 () => sp.GetRequiredService<AppSettingsWindow>(),
                 sp.GetRequiredService<IUpdateChecker>(),
-                sp.GetRequiredService<IBrowserLauncher>()));
+                sp.GetRequiredService<IBrowserLauncher>(),
+                sp.GetRequiredService<IDataCleanupService>(),
+                sp.GetRequiredService<INotificationService>()));
 
         // Windows
         services.AddSingleton<ShellWindow>();

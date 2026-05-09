@@ -19,6 +19,7 @@ public partial class DailyQueryViewModel : ObservableObject
     private readonly IExcelExporter _excelExporter;
     private readonly ISaveFileDialogService _saveDialog;
     private readonly IUserMarksRepository _userMarksRepo;
+    private readonly ISavedSearchesRepository _savedSearchesRepo;
 
     /// <summary>群組顯示色（暖色系，依出現順序循環）。</summary>
     private static readonly string[] GroupAccentColors =
@@ -30,8 +31,17 @@ public partial class DailyQueryViewModel : ObservableObject
     /// <summary>記憶體中的 user-marks 表（sourcePk → UserMark），由 LoadAsync 填入。</summary>
     private Dictionary<string, UserMark> _userMarks = new();
 
+    /// <summary>批次操作期間 true，OnMarkChangedAsync 會跳過 disk I/O 與 ApplyFilter，由批次結束後統一觸發。</summary>
+    private bool _suppressMarkSideEffects;
+
     [ObservableProperty]
     private DateOnly _date;
+
+    /// <summary>跨日查詢的迄止日（含）；null 代表只查 Date 一天。</summary>
+    [ObservableProperty]
+    private DateOnly? _dateTo;
+
+    public bool IsRangeMode => DateTo.HasValue && DateTo.Value > Date;
 
     [ObservableProperty]
     private IReadOnlyList<TenderItemViewModel> _allItems = Array.Empty<TenderItemViewModel>();
@@ -63,6 +73,13 @@ public partial class DailyQueryViewModel : ObservableObject
     [ObservableProperty]
     private bool _showFavoritesOnly;
 
+    /// <summary>顯示已排除的標案（預設不顯示）。</summary>
+    [ObservableProperty]
+    private bool _showExcluded;
+
+    [ObservableProperty]
+    private bool _showUnreadOnly;
+
     [ObservableProperty]
     private string? _selectedTenderMethod;
 
@@ -84,6 +101,7 @@ public partial class DailyQueryViewModel : ObservableObject
     public ObservableCollection<KeywordGroupViewModel> KeywordGroups { get; } = new();
     public ObservableCollection<string> AvailableTenderMethods { get; } = new();
     public ObservableCollection<string> AvailableProcurementTypes { get; } = new();
+    public ObservableCollection<SavedSearch> SavedSearches { get; } = new();
 
     public DailyQueryViewModel(
         ITenderRepository tenderRepo,
@@ -93,7 +111,8 @@ public partial class DailyQueryViewModel : ObservableObject
         IClock clock,
         IExcelExporter excelExporter,
         ISaveFileDialogService saveDialog,
-        IUserMarksRepository userMarksRepo)
+        IUserMarksRepository userMarksRepo,
+        ISavedSearchesRepository savedSearchesRepo)
     {
         _tenderRepo = tenderRepo;
         _browser = browser;
@@ -103,6 +122,67 @@ public partial class DailyQueryViewModel : ObservableObject
         _excelExporter = excelExporter;
         _saveDialog = saveDialog;
         _userMarksRepo = userMarksRepo;
+        _savedSearchesRepo = savedSearchesRepo;
+    }
+
+    [RelayCommand]
+    private async Task LoadSavedSearchesAsync(CancellationToken ct)
+    {
+        try
+        {
+            var set = await _savedSearchesRepo.LoadAsync(ct);
+            SavedSearches.Clear();
+            foreach (var s in set.Searches) SavedSearches.Add(s);
+        }
+        catch { /* ignore */ }
+    }
+
+    [RelayCommand]
+    private async Task SaveCurrentSearchAsync(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+        var search = new SavedSearch
+        {
+            Name = name,
+            KeywordQuery = KeywordQuery,
+            ActiveKeywords = KeywordGroups.SelectMany(g => g.Buttons).Where(b => b.IsActive).Select(b => b.Keyword).ToList().AsReadOnly(),
+            TenderMethod = SelectedTenderMethod == "（不限）" ? null : SelectedTenderMethod,
+            ProcurementType = SelectedProcurementType == "（不限）" ? null : SelectedProcurementType,
+            BudgetMin = BudgetMin,
+            BudgetMax = BudgetMax,
+            ShowActiveOnly = ShowActiveOnly,
+            ShowFavoritesOnly = ShowFavoritesOnly,
+        };
+        // 同名覆蓋
+        var existing = SavedSearches.FirstOrDefault(s => s.Name == name);
+        if (existing != null) SavedSearches.Remove(existing);
+        SavedSearches.Add(search);
+        await _savedSearchesRepo.SaveAsync(new SavedSearchSet { Searches = SavedSearches.ToList().AsReadOnly() });
+    }
+
+    [RelayCommand]
+    private void ApplySavedSearch(SavedSearch? search)
+    {
+        if (search == null) return;
+        KeywordQuery = search.KeywordQuery;
+        var activeSet = new HashSet<string>(search.ActiveKeywords);
+        foreach (var btn in KeywordGroups.SelectMany(g => g.Buttons))
+            btn.IsActive = activeSet.Contains(btn.Keyword);
+        SelectedTenderMethod = search.TenderMethod ?? "（不限）";
+        SelectedProcurementType = search.ProcurementType ?? "（不限）";
+        BudgetMin = search.BudgetMin;
+        BudgetMax = search.BudgetMax;
+        ShowActiveOnly = search.ShowActiveOnly;
+        ShowFavoritesOnly = search.ShowFavoritesOnly;
+        ApplyFilter();
+    }
+
+    [RelayCommand]
+    private async Task DeleteSavedSearchAsync(SavedSearch? search)
+    {
+        if (search == null) return;
+        SavedSearches.Remove(search);
+        await _savedSearchesRepo.SaveAsync(new SavedSearchSet { Searches = SavedSearches.ToList().AsReadOnly() });
     }
 
     [RelayCommand]
@@ -117,19 +197,30 @@ public partial class DailyQueryViewModel : ObservableObject
             var marks = await _userMarksRepo.LoadAsync(ct);
             _userMarks = marks.Marks.ToDictionary(m => m.SourcePk, m => m);
 
-            // 讀取當日標案
-            var snapshot = await _tenderRepo.LoadAsync(Date, ct);
-            var rawItems = snapshot?.Items ?? Array.Empty<TenderItem>();
+            // 讀取（單日或跨日範圍）
+            IReadOnlyList<TenderItem> rawItems;
+            if (IsRangeMode)
+            {
+                var bag = new List<TenderItem>();
+                for (var d = Date; d <= DateTo!.Value; d = d.AddDays(1))
+                {
+                    var snap = await _tenderRepo.LoadAsync(d, ct);
+                    if (snap?.Items != null) bag.AddRange(snap.Items);
+                }
+                rawItems = bag;
+            }
+            else
+            {
+                var snapshot = await _tenderRepo.LoadAsync(Date, ct);
+                rawItems = snapshot?.Items ?? Array.Empty<TenderItem>();
+            }
 
             // 包裝成 ViewModel
             var wrapped = rawItems.Select(item =>
             {
-                var hasMark = _userMarks.TryGetValue(item.SourcePk, out var mark);
-                var vm = new TenderItemViewModel(
-                    item,
-                    isFavorite: hasMark && mark!.IsFavorite,
-                    note: hasMark ? mark!.Note : string.Empty);
-                vm.FavoriteToggled += OnFavoriteToggledAsync;
+                _userMarks.TryGetValue(item.SourcePk, out var mark);
+                var vm = new TenderItemViewModel(item, mark);
+                vm.MarkChanged += OnMarkChangedAsync;
                 return vm;
             }).ToList().AsReadOnly();
             AllItems = wrapped;
@@ -153,6 +244,7 @@ public partial class DailyQueryViewModel : ObservableObject
             }
 
             RebuildDropdowns();
+            await LoadSavedSearchesCommand.ExecuteAsync(null);
             ApplyFilter();
         }
         catch (Exception ex)
@@ -185,40 +277,88 @@ public partial class DailyQueryViewModel : ObservableObject
             SelectedProcurementType = "（不限）";
     }
 
-    private async void OnFavoriteToggledAsync(TenderItemViewModel vm)
+    private async void OnMarkChangedAsync(TenderItemViewModel vm)
     {
-        // 更新記憶體
-        if (_userMarks.TryGetValue(vm.SourcePk, out var existing))
+        _userMarks[vm.SourcePk] = new UserMark
         {
-            _userMarks[vm.SourcePk] = existing with { IsFavorite = vm.IsFavorite };
-        }
-        else
-        {
-            _userMarks[vm.SourcePk] = new UserMark
-            {
-                SourcePk = vm.SourcePk,
-                IsFavorite = vm.IsFavorite,
-            };
-        }
+            SourcePk = vm.SourcePk,
+            IsFavorite = vm.IsFavorite,
+            IsRead = vm.IsRead,
+            IsExcluded = vm.IsExcluded,
+            Note = vm.Note ?? string.Empty,
+        };
 
-        // 寫盤（保留 IsRead/IsExcluded/Note 欄位）
+        // 批次操作期間，跳過 disk write 與 filter 重算，避免 N 次並發寫檔 + N² 次 filter
+        if (_suppressMarkSideEffects) return;
+
+        await PersistUserMarksAsync();
+
+        // 任何 mark 變動都可能影響當前篩選結果
+        ApplyFilter();
+    }
+
+    private async Task PersistUserMarksAsync()
+    {
         try
         {
             var marks = new UserMarks
             {
-                Marks = _userMarks.Values.Where(m => m.IsFavorite || m.IsRead || m.IsExcluded || !string.IsNullOrEmpty(m.Note))
-                                          .ToList()
-                                          .AsReadOnly(),
+                Marks = _userMarks.Values
+                    .Where(m => m.IsFavorite || m.IsRead || m.IsExcluded || !string.IsNullOrEmpty(m.Note))
+                    .ToList()
+                    .AsReadOnly(),
             };
             await _userMarksRepo.SaveAsync(marks);
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"儲存收藏失敗：{ex.Message}";
+            ErrorMessage = $"儲存標記失敗：{ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleRead(TenderItemViewModel? item)
+    {
+        if (item != null) item.IsRead = !item.IsRead;
+    }
+
+    /// <summary>把目前篩選結果全部標記為已讀。</summary>
+    [RelayCommand]
+    private async Task MarkAllAsReadAsync()
+    {
+        await BatchToggleReadAsync(targetState: true);
+    }
+
+    /// <summary>把目前篩選結果全部標記為未讀。</summary>
+    [RelayCommand]
+    private async Task MarkAllAsUnreadAsync()
+    {
+        await BatchToggleReadAsync(targetState: false);
+    }
+
+    private async Task BatchToggleReadAsync(bool targetState)
+    {
+        // 暫停 side-effect，避免每筆都觸發 disk write + ApplyFilter
+        _suppressMarkSideEffects = true;
+        try
+        {
+            foreach (var vm in FilteredItems)
+                if (vm.IsRead != targetState) vm.IsRead = targetState;
+        }
+        finally
+        {
+            _suppressMarkSideEffects = false;
         }
 
-        // 收藏濾鏡開啟時，狀態變動可能影響可見列表
-        if (ShowFavoritesOnly) ApplyFilter();
+        // 統一寫檔一次 + 重算一次篩選
+        await PersistUserMarksAsync();
+        ApplyFilter();
+    }
+
+    [RelayCommand]
+    private void ToggleExclude(TenderItemViewModel? item)
+    {
+        if (item != null) item.IsExcluded = !item.IsExcluded;
     }
 
     [RelayCommand]
@@ -237,6 +377,8 @@ public partial class DailyQueryViewModel : ObservableObject
         KeywordQuery = null;
         ShowActiveOnly = false;
         ShowFavoritesOnly = false;
+        ShowExcluded = false;
+        ShowUnreadOnly = false;
         SelectedTenderMethod = "（不限）";
         SelectedProcurementType = "（不限）";
         BudgetMin = null;
@@ -249,16 +391,55 @@ public partial class DailyQueryViewModel : ObservableObject
     [RelayCommand]
     private async Task GoPreviousDayAsync(CancellationToken ct)
     {
-        Date = Date.AddDays(-1);
+        if (IsRangeMode)
+        {
+            // 跨日 mode：整段往前挪一天
+            DateTo = DateTo!.Value.AddDays(-1);
+            Date = Date.AddDays(-1);
+        }
+        else
+        {
+            Date = Date.AddDays(-1);
+        }
         await LoadAsync(ct);
     }
 
     [RelayCommand]
     private async Task GoNextDayAsync(CancellationToken ct)
     {
-        Date = Date.AddDays(1);
+        if (IsRangeMode)
+        {
+            DateTo = DateTo!.Value.AddDays(1);
+            Date = Date.AddDays(1);
+        }
+        else
+        {
+            Date = Date.AddDays(1);
+        }
         await LoadAsync(ct);
     }
+
+    [RelayCommand]
+    private async Task ClearDateRangeAsync(CancellationToken ct)
+    {
+        DateTo = null;
+        await LoadAsync(ct);
+    }
+
+    [RelayCommand]
+    private void Print()
+    {
+        if (FilteredItems.Count == 0)
+        {
+            ErrorMessage = "目前沒有可列印的資料";
+            return;
+        }
+        // 列印實作在 view 端（PrintHelper），這裡只觸發
+        PrintRequested?.Invoke(FilteredItems);
+    }
+
+    /// <summary>view 端訂閱以執行 WPF FlowDocument 列印。</summary>
+    public event Action<IReadOnlyList<TenderItemViewModel>>? PrintRequested;
 
     [RelayCommand]
     private async Task ExportAsync(CancellationToken ct)
@@ -296,6 +477,14 @@ public partial class DailyQueryViewModel : ObservableObject
     partial void OnSortDirectionChanged(SortDirection value) => ApplyFilter();
     partial void OnShowActiveOnlyChanged(bool value) => ApplyFilter();
     partial void OnShowFavoritesOnlyChanged(bool value) => ApplyFilter();
+    partial void OnShowExcludedChanged(bool value) => ApplyFilter();
+    partial void OnShowUnreadOnlyChanged(bool value) => ApplyFilter();
+    partial void OnDateToChanged(DateOnly? value)
+    {
+        OnPropertyChanged(nameof(IsRangeMode));
+        _ = LoadCommand.ExecuteAsync(null);
+    }
+    partial void OnDateChanged(DateOnly value) => OnPropertyChanged(nameof(IsRangeMode));
     partial void OnSelectedTenderMethodChanged(string? value) => ApplyFilter();
     partial void OnSelectedProcurementTypeChanged(string? value) => ApplyFilter();
     partial void OnBudgetMinChanged(long? value) => ApplyFilter();
@@ -341,11 +530,13 @@ public partial class DailyQueryViewModel : ObservableObject
         var rawAll = AllItems.Select(vm => vm.Item).ToList().AsReadOnly();
         var rawFiltered = _searchService.Search(rawAll, criteria, SortKey, SortDirection, today);
 
-        // 把過濾結果 sourcePk 對回 ViewModel（保留 IsFavorite 等狀態）
+        // 把過濾結果 sourcePk 對回 ViewModel（保留 IsFavorite 等狀態），加上使用者標記過濾
         var vmByPk = AllItems.ToDictionary(v => v.SourcePk);
         var filtered = rawFiltered
             .Select(item => vmByPk[item.SourcePk])
+            .Where(vm => ShowExcluded || !vm.IsExcluded)
             .Where(vm => !ShowFavoritesOnly || vm.IsFavorite)
+            .Where(vm => !ShowUnreadOnly || !vm.IsRead)
             .ToList()
             .AsReadOnly();
 

@@ -107,6 +107,12 @@
                                  BorderBrush="{StaticResource BorderBrush}"
                                  Visibility="{Binding IsCrawlerRunning, Converter={StaticResource BoolToVis}}" />
 
+                    <!-- 列印：只在查詢頁時顯示 -->
+                    <Button Content="🖨 列印"
+                            Command="{Binding CurrentDailyQueryVm.PrintCommand}"
+                            Visibility="{Binding IsDailyQueryVisible, Converter={StaticResource BoolToVis}}"
+                            Padding="12,5" Margin="0,0,8,0" />
+
                     <!-- 匯出 Excel：只在查詢頁時顯示 -->
                     <Button Content="📊 匯出 Excel"
                             Command="{Binding CurrentDailyQueryVm.ExportCommand}"

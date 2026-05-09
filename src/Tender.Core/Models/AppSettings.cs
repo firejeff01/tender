@@ -12,10 +12,6 @@ public sealed record AppSettings
     [JsonPropertyName("catchupEnabled")]
     public bool CatchupEnabled { get; init; } = true;
 
-    /// <summary>爬蟲引擎：httpclient（首版預設）或 playwright（PoC 失敗時切換）。</summary>
-    [JsonPropertyName("crawlerEngine")]
-    public string CrawlerEngine { get; init; } = "httpclient";
-
     /// <summary>爬蟲分頁間隔毫秒數，遵守禮貌爬取。</summary>
     [JsonPropertyName("requestDelayMs")]
     public int RequestDelayMs { get; init; } = 1500;
@@ -23,6 +19,10 @@ public sealed record AppSettings
     /// <summary>最大重試次數。</summary>
     [JsonPropertyName("maxRetries")]
     public int MaxRetries { get; init; } = 3;
+
+    /// <summary>資料保留月數，0 = 永不刪除。預設 6 個月。</summary>
+    [JsonPropertyName("dataRetentionMonths")]
+    public int DataRetentionMonths { get; init; } = 6;
 
     /// <summary>
     /// 預設要擷取的招標方式（業務名稱）。實際送網站的 option/value 由 TenderMethodMapping 決定。

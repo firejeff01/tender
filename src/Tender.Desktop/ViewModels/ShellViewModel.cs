@@ -20,6 +20,8 @@ public partial class ShellViewModel : ObservableObject
     private readonly Func<Window> _appSettingsFactory;
     private readonly IUpdateChecker _updateChecker;
     private readonly IBrowserLauncher _browser;
+    private readonly IDataCleanupService _cleanupService;
+    private readonly INotificationService _notifications;
 
     public MonthlyCalendarViewModel CalendarVm { get; }
 
@@ -59,7 +61,9 @@ public partial class ShellViewModel : ObservableObject
         Func<Window> keywordsManagerFactory,
         Func<Window> appSettingsFactory,
         IUpdateChecker updateChecker,
-        IBrowserLauncher browser)
+        IBrowserLauncher browser,
+        IDataCleanupService cleanupService,
+        INotificationService notifications)
     {
         CalendarVm = calendarVm;
         _dailyVmFactory = dailyVmFactory;
@@ -72,6 +76,8 @@ public partial class ShellViewModel : ObservableObject
         _appSettingsFactory = appSettingsFactory;
         _updateChecker = updateChecker;
         _browser = browser;
+        _cleanupService = cleanupService;
+        _notifications = notifications;
     }
 
     [RelayCommand]
@@ -114,9 +120,27 @@ public partial class ShellViewModel : ObservableObject
         // 載入行事曆（快速）
         await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
 
-        // 背景檢查 missed run、更新檢查（不阻擋 UI）
+        // 背景檢查 missed run、更新檢查、資料清理（不阻擋 UI）
         _ = CheckMissedRunInBackgroundAsync(ct);
         _ = CheckUpdateInBackgroundAsync(ct);
+        _ = RunCleanupInBackgroundAsync(ct);
+    }
+
+    private async Task RunCleanupInBackgroundAsync(CancellationToken ct)
+    {
+        try
+        {
+            var result = await _cleanupService.CleanupAsync(ct);
+            if (result.RemovedFolders > 0)
+            {
+                CrawlerStatusMessage = $"已自動清理 {result.RemovedFolders} 個過期資料夾";
+                await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
+            }
+        }
+        catch
+        {
+            // 清理失敗不影響主功能
+        }
     }
 
     private async Task CheckUpdateInBackgroundAsync(CancellationToken ct)
@@ -235,6 +259,7 @@ public partial class ShellViewModel : ObservableObject
                 // 成功：清除狀態訊息，按鈕轉綠色（透過 IsTodayCrawled）
                 CrawlerStatusMessage = null;
                 CrawlerProgressValue = 0;
+                _notifications.ShowInfo("標案查詢", $"今日（{today:yyyy-MM-dd}）爬蟲已完成");
             }
             else if (exitCode == 4)
             {

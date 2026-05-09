@@ -44,6 +44,9 @@ public sealed class LocalAppDataPaths : IDataPaths
     public string AppSettingsFile
         => Path.Combine(DataRoot, "settings", "app-settings.json");
 
+    public string SavedSearchesFile
+        => Path.Combine(DataRoot, "settings", "saved-searches.json");
+
     public string CrawlerLockFile
         => Path.Combine(DataRoot, "locks", "crawler.lock");
 
