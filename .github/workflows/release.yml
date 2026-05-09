@@ -1,0 +1,69 @@
+name: Build and Release MSI
+
+# 觸發時機：push 帶 v 開頭的 tag（例：v1.2.509.1730）
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # 必要，建立 Release + 上傳 asset
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install WiX 5
+        shell: pwsh
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Determine version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          Write-Host "Tag: $tag"
+          Write-Host "Version: $version"
+          echo "tag=$tag"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          echo "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Restore
+        run: dotnet restore Tender.slnx
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          dotnet test tests/Tender.Core.Tests/Tender.Core.Tests.csproj --nologo --verbosity minimal
+          dotnet test tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj --nologo --verbosity minimal
+          dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --nologo --verbosity minimal
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          .\build\build-msi.ps1 -Version "${{ steps.ver.outputs.version }}"
+
+      - name: Verify MSI exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist\TenderSearch.msi")) { throw "MSI not produced" }
+          $size = (Get-Item "dist\TenderSearch.msi").Length / 1MB
+          Write-Host ("MSI size: {0:N1} MB" -f $size)
+
+      - name: Create GitHub Release with MSI asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/TenderSearch.msi
