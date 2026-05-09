@@ -34,12 +34,22 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $pubRoot = Join-Path $repoRoot 'publish'
 $distRoot = Join-Path $repoRoot 'dist'
 
-# 自動產生版本號（時間遞增 → MajorUpgrade 雙擊自動覆蓋）
+# 自動產生版本號（時間遞增 → MajorUpgrade 自動覆蓋舊版）
+#
+# ⚠️ MSI ProductVersion 限制：
+#   - 前 3 段 (Major.Minor.Build) 才會用於升級比較，第 4 段 (Revision) 被忽略
+#   - Major 上限 255、Minor 上限 255、Build 上限 65535
+#
+# 編碼方式（前 3 段都會被 MSI 用於比較，且每分鐘 build 都單調遞增）：
+#   Major = 1                                                  (產品版本線，固定)
+#   Minor = (Year-2026)*12 + (Month-1)                         (每月遞增；~21 年後達 255)
+#   Build = (Day-1)*1440 + Hour*60 + Minute                    (月內每分鐘遞增；最大 44639)
+#   Rev   = Month*100 + Day                                    (純資訊提示，看版號可推日期)
 if (-not $Version) {
     $now = Get-Date
-    $minor = $now.Year - 2025      # 2026 → 1
-    $build = $now.Month * 100 + $now.Day                    # 5/9 → 509
-    $rev = $now.Hour * 100 + $now.Minute                    # 16:35 → 1635
+    $minor = ($now.Year - 2026) * 12 + ($now.Month - 1)
+    $build = ($now.Day - 1) * 1440 + $now.Hour * 60 + $now.Minute
+    $rev = $now.Month * 100 + $now.Day
     $Version = "1.$minor.$build.$rev"
 }
 

@@ -30,11 +30,17 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          # 與 build-msi.ps1 同一套邏輯：1.{year-2025}.{MMDD}.{HHmm}
+          # ⚠️ MSI ProductVersion 比較只看前 3 段 (Major.Minor.Build)，Revision 被忽略。
+          # 同時 MSI 限制 Major≤255、Minor≤255、Build≤65535。
+          # 與 build-msi.ps1 同一套邏輯，每分鐘 build 都產生 MSI-可比較的不同版號：
+          #   Major = 1
+          #   Minor = (Year-2026)*12 + (Month-1)                  (每月遞增, ~21 年內 < 256)
+          #   Build = (Day-1)*1440 + Hour*60 + Minute             (月內每分鐘遞增, 最大 44639)
+          #   Rev   = Month*100 + Day                             (純資訊提示)
           $now = Get-Date
-          $minor = $now.Year - 2025
-          $build = $now.Month * 100 + $now.Day
-          $rev = $now.Hour * 100 + $now.Minute
+          $minor = ($now.Year - 2026) * 12 + ($now.Month - 1)
+          $build = ($now.Day - 1) * 1440 + $now.Hour * 60 + $now.Minute
+          $rev = $now.Month * 100 + $now.Day
           $version = "1.$minor.$build.$rev"
           $tag = "v$version"
           Write-Host "Version: $version"
