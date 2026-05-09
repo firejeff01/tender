@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <!--
+      Reqnroll.Tools.MsBuild.Generation 2.2.1 與 .NET 10 SDK 存在相容性問題：
+      Gherkin parser 無法識別中文 Feature 名稱（即使 language=en）。
+      暫時移除 MsBuild 自動代碼生成，手動加入 reqnroll.json 讓 Step Definitions 能編譯。
+      Phase 3 時升級 Reqnroll 到修復版本或改用 English Feature 名稱後再重新啟用。
+    -->
+    <!-- <PackageReference Include="Reqnroll.Tools.MsBuild.Generation" Version="2.2.1" /> -->
+    <PackageReference Include="Reqnroll.xUnit" Version="2.2.1" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Feature 文件保留為靜態資源（MsBuild Generation 已暫時停用）-->
+  <ItemGroup>
+    <None Include="Features\*.feature" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Tender.Core\Tender.Core.csproj" />
+    <ProjectReference Include="..\..\src\Tender.Storage\Tender.Storage.csproj" />
+    <ProjectReference Include="..\..\src\Tender.Crawler\Tender.Crawler.csproj" />
+    <ProjectReference Include="..\..\src\Tender.Desktop\Tender.Desktop.csproj" />
+  </ItemGroup>
+
+</Project>

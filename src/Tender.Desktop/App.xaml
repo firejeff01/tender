@@ -1,0 +1,122 @@
+<Application x:Class="Tender.Desktop.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <!-- ==================================================================
+             Warm Professional 主題色票
+             ================================================================== -->
+        <!-- 背景層 -->
+        <SolidColorBrush x:Key="BgMainBrush"     Color="#FBF7EF" />
+        <SolidColorBrush x:Key="BgCardBrush"     Color="#FFFCF7" />
+        <SolidColorBrush x:Key="BgAccentBrush"   Color="#F0E6D2" />
+        <SolidColorBrush x:Key="BgSubtleBrush"   Color="#F5EFE3" />
+
+        <!-- 邊線 -->
+        <SolidColorBrush x:Key="BorderBrush"        Color="#E0D4BC" />
+        <SolidColorBrush x:Key="BorderStrongBrush"  Color="#C9B89C" />
+
+        <!-- 主強調色（焦糖陶土） -->
+        <SolidColorBrush x:Key="PrimaryBrush"      Color="#C4823C" />
+        <SolidColorBrush x:Key="PrimaryDarkBrush"  Color="#9B5C24" />
+        <SolidColorBrush x:Key="PrimaryLightBrush" Color="#F4E6CD" />
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#FBF1DE" />
+
+        <!-- 文字 -->
+        <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#3A2E20" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#7A6857" />
+        <SolidColorBrush x:Key="TextMutedBrush"     Color="#A89888" />
+        <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="#FFFCF7" />
+
+        <!-- 語意色（低彩度暖調） -->
+        <SolidColorBrush x:Key="SuccessBrush"      Color="#7A9963" />
+        <SolidColorBrush x:Key="SuccessDarkBrush"  Color="#5C7A48" />
+        <SolidColorBrush x:Key="SuccessLightBrush" Color="#E8EFD8" />
+
+        <SolidColorBrush x:Key="WarningBrush"      Color="#D69830" />
+        <SolidColorBrush x:Key="WarningLightBrush" Color="#FBEACC" />
+
+        <SolidColorBrush x:Key="ErrorBrush"      Color="#B5523B" />
+        <SolidColorBrush x:Key="ErrorDarkBrush"  Color="#8E3E2D" />
+        <SolidColorBrush x:Key="ErrorLightBrush" Color="#F4DCD3" />
+
+        <SolidColorBrush x:Key="InfoBrush"      Color="#5A7290" />
+        <SolidColorBrush x:Key="InfoLightBrush" Color="#E0E7EE" />
+
+        <!-- ==================================================================
+             共用控制項樣式（沿用主題色）
+             ================================================================== -->
+        <!-- 預設 Button 樣式：暖色邊框、圓角 -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BgSubtleBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 主強調 Button：用於主要動作 -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <!-- TextBox 樣式 -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6,4" />
+        </Style>
+
+        <!-- ComboBox 樣式（沿用系統，但加 padding） -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderStrongBrush}" />
+        </Style>
+
+        <!-- 標題文字 -->
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
+        <Style x:Key="SubtitleTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,40 @@
+# Build outputs
+**/bin/
+**/obj/
+publish/
+dist/
+*.exe
+*.msi
+
+# IDE / VS
+.vs/
+*.user
+*.suo
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 過程性 / 暫存
+.tmp-*/
+error/
+poc-*.html
+poc-*.txt
+*.network-request
+*.network-response
+
+# Tender 本機資料（執行時會寫到 %LocalAppData%，但 dev 也可能用相對路徑）
+data/
+TenderSearch/
+
+# WiX
+*.wixpdb
+
+# .NET CLI
+*.binlog
+
+# 圖示原始檔（保留）；產生的 .ico 也保留以省去 clone 後的轉檔步驟
+# 想要忽略產生的 .ico，把下行取消註解：
+# src/Tender.Desktop/AppIcon.ico

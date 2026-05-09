@@ -1,0 +1,428 @@
+<UserControl x:Class="Tender.Desktop.Views.DailyQueryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Tender.Desktop.Converters"
+             xmlns:vm="clr-namespace:Tender.Desktop.ViewModels"
+             xmlns:search="clr-namespace:Tender.Core.Search;assembly=Tender.Core">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+        <conv:ListJoinConverter x:Key="ListJoinConverter" />
+        <conv:ColorStringToColorConverter x:Key="ColorStringToColor" />
+        <conv:SortLabelConverter x:Key="SortLabel" />
+
+        <x:Array x:Key="SortKeyOptions" Type="{x:Type search:SortKey}">
+            <search:SortKey>None</search:SortKey>
+            <search:SortKey>AgencyName</search:SortKey>
+            <search:SortKey>TenderName</search:SortKey>
+            <search:SortKey>AnnouncementDate</search:SortKey>
+            <search:SortKey>BidDeadline</search:SortKey>
+            <search:SortKey>BudgetAmount</search:SortKey>
+        </x:Array>
+        <x:Array x:Key="SortDirectionOptions" Type="{x:Type search:SortDirection}">
+            <search:SortDirection>Descending</search:SortDirection>
+            <search:SortDirection>Ascending</search:SortDirection>
+        </x:Array>
+
+        <!-- 群組下拉 trigger 樣式 -->
+        <Style x:Key="GroupDropdownTriggerStyle" TargetType="ToggleButton">
+            <Setter Property="Padding" Value="11,6" />
+            <Setter Property="Margin" Value="0,0,8,4" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border"
+                                Background="{StaticResource BgCardBrush}"
+                                BorderBrush="{StaticResource BorderStrongBrush}"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasActive}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 群組下拉 DataTemplate -->
+        <DataTemplate DataType="{x:Type vm:KeywordGroupViewModel}">
+            <Grid>
+                <ToggleButton x:Name="dropdownTrigger" Style="{StaticResource GroupDropdownTriggerStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="4" Margin="0,0,8,0" CornerRadius="2">
+                            <Border.Background>
+                                <SolidColorBrush Color="{Binding AccentColor, Converter={StaticResource ColorStringToColor}}" />
+                            </Border.Background>
+                        </Border>
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ActiveCount, StringFormat='({0})'}"
+                                   VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Foreground="{StaticResource PrimaryDarkBrush}" FontWeight="Bold"
+                                   Visibility="{Binding HasActive, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text=" ▾" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{StaticResource TextMutedBrush}" />
+                    </StackPanel>
+                </ToggleButton>
+
+                <Popup IsOpen="{Binding IsChecked, ElementName=dropdownTrigger, Mode=TwoWay}"
+                       PlacementTarget="{Binding ElementName=dropdownTrigger}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       PopupAnimation="Fade">
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderStrongBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="0" Margin="0,4,0,0">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#5C4A2E" BlurRadius="10" ShadowDepth="2" Opacity="0.2" />
+                        </Border.Effect>
+                        <DockPanel MinWidth="220">
+                            <Border DockPanel.Dock="Bottom" Background="{StaticResource BgSubtleBrush}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
+                                    Padding="8" CornerRadius="0,0,6,6">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="全選" Command="{Binding SelectAllCommand}"
+                                            FontSize="11" Padding="8,3" Margin="0,0,4,0" />
+                                    <Button Content="清除" Command="{Binding ClearGroupCommand}"
+                                            FontSize="11" Padding="8,3" />
+                                </StackPanel>
+                            </Border>
+                            <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Buttons}" Padding="10">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:KeywordButtonViewModel}">
+                                            <CheckBox Content="{Binding Keyword}"
+                                                      IsChecked="{Binding IsActive, Mode=TwoWay}"
+                                                      Foreground="{StaticResource TextPrimaryBrush}"
+                                                      Margin="2,3" Padding="4,0,0,0"
+                                                      VerticalContentAlignment="Center" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel Background="{StaticResource BgMainBrush}">
+        <!-- 標題列 -->
+        <Border DockPanel.Dock="Top" Padding="14,10"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="◀ 前一日" Command="{Binding GoPreviousDayCommand}" Padding="10,5" Margin="0,0,8,0" />
+                <Button Content="後一日 ▶" Command="{Binding GoNextDayCommand}" Padding="10,5" Margin="0,0,16,0" />
+                <Border Width="3" Background="{StaticResource PrimaryBrush}" CornerRadius="1.5" Margin="0,2,8,2" />
+                <TextBlock Text="{Binding Date, StringFormat='{}{0:yyyy-MM-dd}'}"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <TextBlock Margin="20,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="顯示 {0:N0} / 共 {1:N0} 筆">
+                            <Binding Path="FilteredItems.Count" />
+                            <Binding Path="AllItems.Count" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- 工具列 -->
+        <Border DockPanel.Dock="Top" Padding="14,8"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <WrapPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="搜尋：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding KeywordQuery, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                             Width="220" Height="28" Margin="4,0,0,0" VerticalContentAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="招標方式：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <ComboBox ItemsSource="{Binding AvailableTenderMethods}"
+                              SelectedItem="{Binding SelectedTenderMethod}"
+                              Width="180" Height="28" Margin="4,0,0,0" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="採購性質：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <ComboBox ItemsSource="{Binding AvailableProcurementTypes}"
+                              SelectedItem="{Binding SelectedProcurementType}"
+                              Width="100" Height="28" Margin="4,0,0,0" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="排序：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <ComboBox SelectedItem="{Binding SortKey}"
+                              ItemsSource="{StaticResource SortKeyOptions}"
+                              Width="130" Height="28" Margin="4,0">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource SortLabel}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <ComboBox SelectedItem="{Binding SortDirection}"
+                              ItemsSource="{StaticResource SortDirectionOptions}"
+                              Width="130" Height="28">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource SortLabel}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="預算：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding BudgetMin, TargetNullValue='', UpdateSourceTrigger=LostFocus}"
+                             Width="110" Height="28" Margin="4,0,4,0" VerticalContentAlignment="Center"
+                             ToolTip="最低金額（空白表示不限）" />
+                    <TextBlock Text="~" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding BudgetMax, TargetNullValue='', UpdateSourceTrigger=LostFocus}"
+                             Width="110" Height="28" Margin="4,0,0,0" VerticalContentAlignment="Center"
+                             ToolTip="最高金額（空白表示不限）" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                    <TextBlock Text="截止投標：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <DatePicker SelectedDate="{Binding BidDeadlineFrom}" Width="130" Height="28" Margin="4,0,4,0"
+                                ToolTip="起始日（空白表示不限）" />
+                    <TextBlock Text="~" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <DatePicker SelectedDate="{Binding BidDeadlineTo}" Width="130" Height="28" Margin="4,0,0,0"
+                                ToolTip="迄止日（空白表示不限）" />
+                </StackPanel>
+
+                <CheckBox Content="只看尚未截止" IsChecked="{Binding ShowActiveOnly}"
+                          VerticalAlignment="Center" Margin="0,0,12,4"
+                          Foreground="{StaticResource TextPrimaryBrush}" />
+
+                <CheckBox Content="⭐ 只看收藏" IsChecked="{Binding ShowFavoritesOnly}"
+                          VerticalAlignment="Center" Margin="0,0,16,4"
+                          Foreground="{StaticResource TextPrimaryBrush}" />
+
+                <Button Content="🧹 清除全部篩選" Command="{Binding ClearAllFiltersCommand}" Padding="10,5" Margin="0,0,0,4" />
+            </WrapPanel>
+        </Border>
+
+        <!-- 關鍵字下拉群組區 + 即時筆數 -->
+        <Border DockPanel.Dock="Top" Padding="14,10"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Border DockPanel.Dock="Right"
+                        Background="{StaticResource PrimaryLightBrush}"
+                        BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="14,7" Margin="12,0,0,0"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="符合" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding FilteredItems.Count, StringFormat='{}{0:N0}'}"
+                                   FontSize="22" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryDarkBrush}"
+                                   Margin="8,0" />
+                        <TextBlock Text="筆" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding KeywordGroups}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Text="⏳ 載入中..."
+                   HorizontalAlignment="Center" Margin="0,8"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="380" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid Grid.Column="0"
+                      ItemsSource="{Binding FilteredItems}"
+                      SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="{StaticResource BgSubtleBrush}"
+                      RowBackground="{StaticResource BgCardBrush}"
+                      Background="{StaticResource BgMainBrush}"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      Foreground="{StaticResource TextPrimaryBrush}"
+                      HeadersVisibility="Column">
+                <DataGrid.InputBindings>
+                    <MouseBinding MouseAction="LeftDoubleClick"
+                                  Command="{Binding OpenDetailCommand}"
+                                  CommandParameter="{Binding SelectedItem}" />
+                </DataGrid.InputBindings>
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="{StaticResource BgAccentBrush}" />
+                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Padding" Value="8,7" />
+                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                        <Setter Property="BorderThickness" Value="0,0,1,1" />
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="★" Width="36" SortMemberPath="IsFavorite">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsFavorite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="收藏">
+                                    <CheckBox.Template>
+                                        <ControlTemplate TargetType="CheckBox">
+                                            <TextBlock x:Name="star" Text="☆" FontSize="16" Foreground="{StaticResource TextMutedBrush}"
+                                                       Cursor="Hand" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="star" Property="Text" Value="★" />
+                                                    <Setter TargetName="star" Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="star" Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </CheckBox.Template>
+                                </CheckBox>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="機關名稱" Binding="{Binding AgencyName}" Width="180" />
+                    <DataGridTextColumn Header="標案名稱" Binding="{Binding TenderName}" Width="*" />
+                    <DataGridTextColumn Header="招標方式" Binding="{Binding TenderMethod}" Width="120" />
+                    <DataGridTextColumn Header="採購性質" Binding="{Binding ProcurementType}" Width="80" />
+                    <DataGridTextColumn Header="公告日期" Binding="{Binding AnnouncementDate}" Width="90" />
+                    <DataGridTextColumn Header="截止投標" Binding="{Binding BidDeadline}" Width="90" />
+                    <DataGridTextColumn Header="預算金額" Binding="{Binding BudgetAmount, StringFormat='{}{0:N0}'}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="命中關鍵字"
+                                        Binding="{Binding MatchedKeywords, Converter={StaticResource ListJoinConverter}}"
+                                        Width="180" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- 詳情面板 -->
+            <Border Grid.Column="1"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0"
+                    Background="{StaticResource BgCardBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <Border Background="{StaticResource BgAccentBrush}" CornerRadius="5" Padding="10,6" Margin="0,0,0,12">
+                            <TextBlock Text="📋 標案詳情" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+                        </Border>
+                        <StackPanel Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}}">
+                            <TextBlock Text="{Binding SelectedItem.TenderName}" FontWeight="SemiBold" FontSize="14"
+                                       TextWrapping="Wrap" Margin="0,0,0,12"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="機關名稱" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedItem.AgencyName}" TextWrapping="Wrap" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="案號" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedItem.TenderNo, FallbackValue='—', TargetNullValue='—'}" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="招標方式" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedItem.TenderMethod}" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="採購性質" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedItem.ProcurementType, FallbackValue='—', TargetNullValue='—'}" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="公告日期" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedItem.AnnouncementDate}" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="截止投標" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedItem.BidDeadline, FallbackValue='—', TargetNullValue='—'}" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="預算金額" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SelectedItem.BudgetAmount, StringFormat='{}{0:N0} 元', FallbackValue='—', TargetNullValue='—'}" Margin="0,6,0,0" Foreground="{StaticResource PrimaryDarkBrush}" FontWeight="SemiBold" />
+
+                                <TextBlock Grid.Row="7" Grid.Column="0" Text="命中關鍵字" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0" />
+                                <TextBlock Grid.Row="7" Grid.Column="1"
+                                           Text="{Binding SelectedItem.MatchedKeywords, Converter={StaticResource ListJoinConverter}, FallbackValue='—'}"
+                                           TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{StaticResource TextPrimaryBrush}" />
+                            </Grid>
+
+                            <Button Content="🔗 在瀏覽器開啟詳情頁"
+                                    Command="{Binding OpenDetailCommand}"
+                                    CommandParameter="{Binding SelectedItem}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Padding="14,7" Margin="0,18,0,0" HorizontalAlignment="Left" />
+                        </StackPanel>
+                        <TextBlock Text="（從左方點選標案以顯示詳情）"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}, ConverterParameter=Inverse}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

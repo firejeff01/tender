@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="政府電子採購網標案查詢"
+           Manufacturer="TenderSearch"
+           Version="$(var.BuildVersion)"
+           UpgradeCode="C9F4D6BE-3A51-4B7F-B0A8-1F5FCB000001"
+           Codepage="950"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="政府電子採購網每日標案查詢工具" Manufacturer="TenderSearch" />
+    <MediaTemplate EmbedCab="yes" />
+    <MajorUpgrade DowngradeErrorMessage="目前已安裝較新版本，無法降級。" />
+
+    <!-- 應用程式圖示（用於 Programs and Features ARP 條目 + 捷徑） -->
+    <Icon Id="AppIcon.ico" SourceFile="..\Tender.Desktop\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
+    <!-- 安裝目錄結構 -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="TenderSearch">
+        <Directory Id="DESKTOPFOLDER" Name="desktop" />
+        <Directory Id="CRAWLERFOLDER" Name="crawler" />
+        <Directory Id="SCRIPTSFOLDER" Name="scripts" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="標案查詢" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="Main" Title="主程式" Level="1">
+      <ComponentGroupRef Id="DesktopFiles" />
+      <ComponentGroupRef Id="CrawlerFiles" />
+      <ComponentRef Id="DesktopShortcut" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="ScheduleScripts" />
+    </Feature>
+
+    <ComponentGroup Id="DesktopFiles" Directory="DESKTOPFOLDER">
+      <Files Include="..\..\publish\desktop\**" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="CrawlerFiles" Directory="CRAWLERFOLDER">
+      <Files Include="..\..\publish\crawler\**" />
+    </ComponentGroup>
+
+    <!-- 排程任務輔助腳本 -->
+    <Component Id="ScheduleScripts" Directory="SCRIPTSFOLDER" Guid="C9F4D6BE-3A51-4B7F-B0A8-1F5FCB000020">
+      <File Id="InstallTaskBat" Source="setup-scheduled-task.bat" KeyPath="yes" />
+      <File Id="UninstallTaskBat" Source="remove-scheduled-task.bat" />
+    </Component>
+
+    <!-- 桌面捷徑 -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="C9F4D6BE-3A51-4B7F-B0A8-1F5FCB000010">
+      <Shortcut Id="DesktopAppShortcut"
+                Name="標案查詢"
+                Description="開啟政府電子採購網標案查詢"
+                Target="[DESKTOPFOLDER]Tender.Desktop.exe"
+                WorkingDirectory="DESKTOPFOLDER"
+                Icon="AppIcon.ico" />
+      <RegistryValue Root="HKCU" Key="Software\TenderSearch" Name="DesktopShortcut"
+                     Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- 開始功能表捷徑 -->
+    <Component Id="StartMenuShortcuts" Directory="ProgramMenuDir" Guid="C9F4D6BE-3A51-4B7F-B0A8-1F5FCB000011">
+      <Shortcut Id="StartMenuAppShortcut"
+                Name="標案查詢"
+                Description="開啟政府電子採購網標案查詢"
+                Target="[DESKTOPFOLDER]Tender.Desktop.exe"
+                WorkingDirectory="DESKTOPFOLDER"
+                Icon="AppIcon.ico" />
+      <Shortcut Id="StartMenuSetupTaskShortcut"
+                Name="建立每日排程"
+                Description="建立 Task Scheduler 每日 17 點排程任務（需以系統管理員身份執行）"
+                Target="[SCRIPTSFOLDER]setup-scheduled-task.bat"
+                WorkingDirectory="SCRIPTSFOLDER" />
+      <RemoveFolder Id="RemoveStartMenuDir" Directory="ProgramMenuDir" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\TenderSearch" Name="StartMenuShortcut"
+                     Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- 自動建立每日 17:00 排程任務（透過 WixQuietExec64 + schtasks） -->
+    <SetProperty Id="CreateScheduledTask"
+                 Sequence="execute"
+                 Before="CreateScheduledTask"
+                 Value='&quot;[System64Folder]schtasks.exe&quot; /Create /SC DAILY /TN &quot;TenderSearch.DailyCrawl&quot; /TR &quot;\&quot;[CRAWLERFOLDER]Tender.Crawler.exe\&quot; --mode scheduled&quot; /ST 17:00 /F' />
+
+    <CustomAction Id="CreateScheduledTask"
+                  BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixQuietExec64"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <SetProperty Id="RemoveScheduledTask"
+                 Sequence="execute"
+                 Before="RemoveScheduledTask"
+                 Value='&quot;[System64Folder]schtasks.exe&quot; /Delete /TN &quot;TenderSearch.DailyCrawl&quot; /F' />
+
+    <CustomAction Id="RemoveScheduledTask"
+                  BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixQuietExec64"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="CreateScheduledTask" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="RemoveScheduledTask" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
+    </InstallExecuteSequence>
+
+    <ui:WixUI Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+  </Package>
+</Wix>

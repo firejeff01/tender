@@ -1,0 +1,16 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputName>TenderSearch</OutputName>
+    <OutputType>Package</OutputType>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <!-- BuildVersion 由 build-msi.ps1 產生（格式 1.{year-2025}.{MMDD}.{HHmm}），
+         若直接 dotnet build 無傳入則 fallback 為 1.0.0.0 -->
+    <BuildVersion Condition="'$(BuildVersion)' == ''">1.0.0.0</BuildVersion>
+    <DefineConstants>BuildVersion=$(BuildVersion)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+</Project>

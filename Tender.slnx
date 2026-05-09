@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Tender.Core/Tender.Core.csproj" />
+    <Project Path="src/Tender.Crawler/Tender.Crawler.csproj" />
+    <Project Path="src/Tender.Desktop/Tender.Desktop.csproj" />
+    <Project Path="src/Tender.Storage/Tender.Storage.csproj" />
+    <Project Path="src/Tender.Installer/Tender.Installer.wixproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tender.AcceptanceTests/Tender.AcceptanceTests.csproj" />
+    <Project Path="tests/Tender.Core.Tests/Tender.Core.Tests.csproj" />
+    <Project Path="tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj" />
+    <Project Path="tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj" />
+  </Folder>
+</Solution>

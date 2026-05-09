@@ -1,0 +1,175 @@
+<UserControl x:Class="Tender.Desktop.Views.MonthlyCalendarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:Tender.Desktop.Converters"
+             xmlns:models="clr-namespace:Tender.Core.Models;assembly=Tender.Core">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:ZeroToVisibilityConverter x:Key="ZeroToVis" />
+
+        <DataTemplate x:Key="DayCellTemplate">
+            <Button Command="{Binding DataContext.NavigateToDayCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                    CommandParameter="{Binding Date}"
+                    Margin="3" Padding="0"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="6">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                            <Setter TargetName="border" Property="BorderThickness" Value="2" />
+                                            <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <!-- 無資料：暖灰底、disabled -->
+                            <DataTrigger Binding="{Binding Summary}" Value="{x:Null}">
+                                <Setter Property="Background" Value="{StaticResource BgSubtleBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                            <!-- 失敗：磚紅底 -->
+                            <DataTrigger Binding="{Binding Summary.LastRunStatus}" Value="{x:Static models:RunStatus.Failed}">
+                                <Setter Property="Background" Value="{StaticResource ErrorLightBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource ErrorBrush}" />
+                            </DataTrigger>
+                            <!-- 損毀：深磚紅 -->
+                            <DataTrigger Binding="{Binding IsCorrupted}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ErrorLightBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource ErrorDarkBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="8,5,8,0">
+                        <TextBlock Text="{Binding Date.Day}"
+                                   FontSize="16" FontWeight="Bold"
+                                   HorizontalAlignment="Left" />
+                        <TextBlock Text="⚠"
+                                   FontSize="14"
+                                   Foreground="{StaticResource ErrorBrush}"
+                                   HorizontalAlignment="Right">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Summary.LastRunStatus}" Value="{x:Static models:RunStatus.Failed}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding Summary.TotalCount, StringFormat='{}{0:N0} 筆', FallbackValue='—'}"
+                               FontSize="14"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel Background="{StaticResource BgMainBrush}">
+        <!-- 月份切換工具列 -->
+        <Border DockPanel.Dock="Top" Padding="14,12"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="◀" Command="{Binding GoPreviousMonthCommand}" Padding="14,5" />
+                <TextBlock Margin="20,0" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"
+                           Foreground="{StaticResource TextPrimaryBrush}">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} 年 {1} 月">
+                            <Binding Path="Year" />
+                            <Binding Path="Month" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <Button Content="▶" Command="{Binding GoNextMonthCommand}" Padding="14,5" />
+                <Button Content="本月" Command="{Binding GoToCurrentMonthCommand}" Padding="14,5" Margin="20,0,0,0" />
+
+                <!-- 月份概況 chips -->
+                <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6" Padding="12,5"
+                        Margin="40,0,0,0" VerticalAlignment="Center"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="本月" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding View.MonthlyTotalCount, StringFormat='{}{0:N0}'}"
+                                   FontWeight="Bold" FontSize="17" Foreground="{StaticResource PrimaryDarkBrush}"
+                                   Margin="6,0,2,0" VerticalAlignment="Center" />
+                        <TextBlock Text="筆" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource SuccessLightBrush}" CornerRadius="6" Padding="12,5"
+                        Margin="8,0,0,0" VerticalAlignment="Center"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="有資料" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding DaysWithDataCount}"
+                                   FontWeight="Bold" FontSize="17" Foreground="{StaticResource SuccessDarkBrush}"
+                                   Margin="6,0,2,0" VerticalAlignment="Center" />
+                        <TextBlock Text="天" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource ErrorLightBrush}" CornerRadius="6" Padding="12,5"
+                        Margin="8,0,0,0" VerticalAlignment="Center"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        Visibility="{Binding FailedDaysCount, Converter={StaticResource ZeroToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="失敗" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding FailedDaysCount}"
+                                   FontWeight="Bold" FontSize="17" Foreground="{StaticResource ErrorDarkBrush}"
+                                   Margin="6,0,2,0" VerticalAlignment="Center" />
+                        <TextBlock Text="天" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Text="⏳ 載入中..."
+                   HorizontalAlignment="Center" Margin="0,8"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}" />
+
+        <ItemsControl ItemsSource="{Binding View.Days}"
+                      ItemTemplate="{StaticResource DayCellTemplate}"
+                      Padding="14">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="7" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+    </DockPanel>
+</UserControl>

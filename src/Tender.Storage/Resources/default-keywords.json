@@ -1,0 +1,135 @@
+{
+  "groups": [
+    {
+      "name": "資訊系統",
+      "items": [
+        { "keyword": "數位", "targetField": "tenderName", "enabled": true },
+        { "keyword": "系統", "targetField": "tenderName", "enabled": true },
+        { "keyword": "管理", "targetField": "tenderName", "enabled": true },
+        { "keyword": "建置", "targetField": "tenderName", "enabled": true },
+        { "keyword": "網", "targetField": "tenderName", "enabled": true },
+        { "keyword": "資訊", "targetField": "tenderName", "enabled": true },
+        { "keyword": "學習", "targetField": "tenderName", "enabled": true },
+        { "keyword": "知識", "targetField": "tenderName", "enabled": true },
+        { "keyword": "平台", "targetField": "tenderName", "enabled": true },
+        { "keyword": "入口", "targetField": "tenderName", "enabled": true },
+        { "keyword": "服務", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "XR/AI",
+      "items": [
+        { "keyword": "虛擬", "targetField": "tenderName", "enabled": true },
+        { "keyword": "擴增", "targetField": "tenderName", "enabled": true },
+        { "keyword": "混合", "targetField": "tenderName", "enabled": true },
+        { "keyword": "電子", "targetField": "tenderName", "enabled": true },
+        { "keyword": "AR", "targetField": "tenderName", "enabled": true },
+        { "keyword": "VR", "targetField": "tenderName", "enabled": true },
+        { "keyword": "MR", "targetField": "tenderName", "enabled": true },
+        { "keyword": "XR", "targetField": "tenderName", "enabled": true },
+        { "keyword": "AI", "targetField": "tenderName", "enabled": true },
+        { "keyword": "人工智慧", "targetField": "tenderName", "enabled": true },
+        { "keyword": "數位雙生", "targetField": "tenderName", "enabled": true },
+        { "keyword": "數位孿生", "targetField": "tenderName", "enabled": true },
+        { "keyword": "沉浸式", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "資安/無障礙",
+      "items": [
+        { "keyword": "ISMS", "targetField": "tenderName", "enabled": true },
+        { "keyword": "ISRM", "targetField": "tenderName", "enabled": true },
+        { "keyword": "資訊安全", "targetField": "tenderName", "enabled": true },
+        { "keyword": "無障礙", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "ESG/碳管理",
+      "items": [
+        { "keyword": "ESG", "targetField": "tenderName", "enabled": true },
+        { "keyword": "永續", "targetField": "tenderName", "enabled": true },
+        { "keyword": "淨零", "targetField": "tenderName", "enabled": true },
+        { "keyword": "碳排", "targetField": "tenderName", "enabled": true },
+        { "keyword": "碳盤查", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "業務雜項",
+      "items": [
+        { "keyword": "補助", "targetField": "tenderName", "enabled": true },
+        { "keyword": "津貼", "targetField": "tenderName", "enabled": true },
+        { "keyword": "雲端", "targetField": "tenderName", "enabled": true },
+        { "keyword": "AWS", "targetField": "tenderName", "enabled": true },
+        { "keyword": "報名", "targetField": "tenderName", "enabled": true },
+        { "keyword": "無人", "targetField": "tenderName", "enabled": true },
+        { "keyword": "巡檢", "targetField": "tenderName", "enabled": true },
+        { "keyword": "志工", "targetField": "tenderName", "enabled": true },
+        { "keyword": "共同供應契約", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "智慧管考",
+      "items": [
+        { "keyword": "管考", "targetField": "tenderName", "enabled": true },
+        { "keyword": "智慧", "targetField": "tenderName", "enabled": true },
+        { "keyword": "計畫", "targetField": "tenderName", "enabled": true },
+        { "keyword": "案管", "targetField": "tenderName", "enabled": true },
+        { "keyword": "監控", "targetField": "tenderName", "enabled": true },
+        { "keyword": "桌牌", "targetField": "tenderName", "enabled": true },
+        { "keyword": "作業", "targetField": "tenderName", "enabled": true },
+        { "keyword": "表單", "targetField": "tenderName", "enabled": true },
+        { "keyword": "偵測", "targetField": "tenderName", "enabled": true },
+        { "keyword": "整合", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "倉儲自動化",
+      "items": [
+        { "keyword": "倉儲", "targetField": "tenderName", "enabled": true },
+        { "keyword": "搬運", "targetField": "tenderName", "enabled": true },
+        { "keyword": "自動化", "targetField": "tenderName", "enabled": true },
+        { "keyword": "物料", "targetField": "tenderName", "enabled": true },
+        { "keyword": "AVG", "targetField": "tenderName", "enabled": true },
+        { "keyword": "WMS", "targetField": "tenderName", "enabled": true },
+        { "keyword": "儲存", "targetField": "tenderName", "enabled": true },
+        { "keyword": "智慧倉儲", "targetField": "tenderName", "enabled": true },
+        { "keyword": "倉儲管理", "targetField": "tenderName", "enabled": true },
+        { "keyword": "物料管理", "targetField": "tenderName", "enabled": true },
+        { "keyword": "揀貨系統", "targetField": "tenderName", "enabled": true }
+      ]
+    },
+    {
+      "name": "地區",
+      "items": [
+        { "keyword": "屏東", "targetField": "any", "enabled": true },
+        { "keyword": "高雄", "targetField": "any", "enabled": true },
+        { "keyword": "臺南", "targetField": "any", "enabled": true },
+        { "keyword": "嘉義", "targetField": "any", "enabled": true },
+        { "keyword": "雲林", "targetField": "any", "enabled": true },
+        { "keyword": "南投", "targetField": "any", "enabled": true },
+        { "keyword": "彰化", "targetField": "any", "enabled": true },
+        { "keyword": "臺中", "targetField": "any", "enabled": true },
+        { "keyword": "苗栗", "targetField": "any", "enabled": true },
+        { "keyword": "新竹", "targetField": "any", "enabled": true },
+        { "keyword": "桃園", "targetField": "any", "enabled": true },
+        { "keyword": "新北", "targetField": "any", "enabled": true },
+        { "keyword": "臺北", "targetField": "any", "enabled": true },
+        { "keyword": "基隆", "targetField": "any", "enabled": true },
+        { "keyword": "宜蘭", "targetField": "any", "enabled": true },
+        { "keyword": "花蓮", "targetField": "any", "enabled": true },
+        { "keyword": "臺東", "targetField": "any", "enabled": true },
+        { "keyword": "墾丁", "targetField": "any", "enabled": true },
+        { "keyword": "澎湖", "targetField": "any", "enabled": true },
+        { "keyword": "金門", "targetField": "any", "enabled": true }
+      ]
+    },
+    {
+      "name": "指定機關",
+      "items": [
+        { "keyword": "經濟部水利署", "targetField": "agencyName", "enabled": true },
+        { "keyword": "原住民族委員會", "targetField": "agencyName", "enabled": true },
+        { "keyword": "財團法人職業災害預防及重建中心", "targetField": "agencyName", "enabled": true }
+      ]
+    }
+  ]
+}
