@@ -374,10 +374,12 @@
       <dl class="meta">
         <div><dt>產品名稱</dt><dd>TenderSearch</dd></div>
         <div><dt>分類</dt><dd>內部桌面工具（Windows）</dd></div>
-        <div><dt>報告日期</dt><dd>2026-05-10</dd></div>
-        <div><dt>報告版本</dt><dd>1.1</dd></div>
-        <div><dt>掃描方法</dt><dd>靜態分析（SAST）</dd></div>
+        <div><dt>報告日期</dt><dd>2026-05-10（v1.4 增量功能 + 重掃）</dd></div>
+        <div><dt>報告版本</dt><dd>1.4</dd></div>
+        <div><dt>執行環境</dt><dd>.NET 10 LTS（支援至 2028-11）</dd></div>
         <div><dt>單元測試覆蓋</dt><dd>160 / 160 通過</dd></div>
+        <div><dt>套件 audit 結果</dt><dd>0 known vuln</dd></div>
+        <div><dt>分支</dt><dd>dev10（待 review／merge）</dd></div>
       </dl>
     </header>
 
@@ -436,6 +438,27 @@
         其中 <strong>6 項已在程式碼／CI 層完成修補</strong>，剩餘 1 項屬於發行階段（MSI codesigning），
         須公司 IT 提供代碼簽章憑證後才能納入 CI 流程；其餘 2 項為持續監控的 Info 等級項目。
       </p>
+      <p>
+        <strong>v1.2 補充：</strong>所有修補經 GitHub Actions CI 實證通過，端到端 release pipeline
+        正常產出簽章前的 MSI 與 SHA256 校驗檔。本機重新執行
+        <code>dotnet list package --vulnerable --include-transitive</code> 對全部 8 個 csproj
+        掃描，<strong>結果為零已知漏洞</strong>（含遞移依賴）。Dependabot 啟用首日已自動開啟
+        6 個非安全性套件升級 PR，證明監控正常運作。
+      </p>
+      <p>
+        <strong>v1.3 補充：</strong>專案執行環境從 .NET 8 LTS（EOL 2026-11）升級至
+        <strong>.NET 10 LTS（EOL 2028-11）</strong>，延長 2 年支援期。8 個 csproj、
+        4 個 <code>Microsoft.Extensions.*</code> 套件、CI workflows 全面同步至 10.0.x。
+        升級後 build / 160 unit tests / MSI publish 全綠。原本為了壓制
+        .NET 8 transitive shim 警告而加的 <code>tests/Directory.Build.props</code> 隨之刪除。
+      </p>
+      <p>
+        <strong>v1.4 補充：</strong>新增多項使用者體驗改善（行事曆週欄表頭、無資料天補抓按鈕、
+        起訖日 Popup Calendar、檔案系統自動 reload 等），順手修掉兩個排程任務 bug
+        （Command 引號污染、預設 <code>DisallowStartIfOnBatteries=true</code> 導致筆電拔電卡 Queued）。
+        所有新增程式碼路徑經安全審查 <strong>無新弱點</strong>；XML 模板對外部值
+        （路徑、時間）皆使用 <code>SecurityElement.Escape</code> + regex 預先驗證。
+      </p>
     </section>
 
     <!-- ================== 2. 技術選型 ================== -->
@@ -446,7 +469,7 @@
       <table>
         <tr><th>項目</th><th>規格</th></tr>
         <tr><td>目標作業系統</td><td>Windows 10 / 11（x64）</td></tr>
-        <tr><td>執行環境</td><td>.NET 8 Desktop Runtime（self-contained MSI 內含，使用者免安裝）</td></tr>
+        <tr><td>執行環境</td><td>.NET 10 Desktop Runtime（self-contained MSI 內含，使用者免安裝）</td></tr>
         <tr><td>UI 框架</td><td>WPF（XAML + MVVM）</td></tr>
         <tr><td>建置工具鏈</td><td>.NET SDK 8.0、WiX Toolset 5.0.2、PowerShell 5.1+</td></tr>
         <tr><td>CI／CD</td><td>GitHub Actions（windows-latest runner）</td></tr>
@@ -456,24 +479,25 @@
       <table>
         <tr><th>套件</th><th>版本</th><th>用途</th><th>授權</th></tr>
         <tr><td><code>CommunityToolkit.Mvvm</code></td><td>8.3.2</td><td>MVVM 源產生器（ObservableProperty / RelayCommand）</td><td>MIT</td></tr>
-        <tr><td><code>Microsoft.Extensions.Hosting</code></td><td>8.0.1</td><td>桌面 app 的 IHost + DI</td><td>MIT</td></tr>
-        <tr><td><code>Microsoft.Extensions.Http</code></td><td>8.0.1</td><td>HttpClientFactory（爬蟲）</td><td>MIT</td></tr>
-        <tr><td><code>Microsoft.Extensions.DependencyInjection.Abstractions</code></td><td>8.0.2</td><td>DI 抽象</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.Hosting</code></td><td>10.0.7</td><td>桌面 app 的 IHost + DI</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.Http</code></td><td>10.0.7</td><td>HttpClientFactory（爬蟲）</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.DependencyInjection.Abstractions</code></td><td>10.0.7</td><td>DI 抽象</td><td>MIT</td></tr>
         <tr><td><code>AngleSharp</code></td><td>1.1.2</td><td>HTML5 解析（DOM API）</td><td>MIT</td></tr>
         <tr><td><code>Polly</code></td><td>8.4.2</td><td>網路重試／指數退避</td><td>BSD-3</td></tr>
         <tr><td><code>ClosedXML</code></td><td>0.104.2</td><td>Excel（.xlsx）匯出</td><td>MIT</td></tr>
-        <tr><td><code>System.Drawing.Common</code></td><td>8.0.10</td><td>系統托盤圖示</td><td>MIT</td></tr>
+        <tr><td><code>System.Drawing.Common</code></td><td>—（隨 net10.0-windows SDK）</td><td>系統托盤圖示</td><td>MIT</td></tr>
         <tr><td><code>xUnit / FluentAssertions / Moq</code></td><td>—</td><td>單元測試</td><td>MIT / Apache</td></tr>
       </table>
 
       <p>
-        所有套件皆為 .NET 8 對應的近期版本，<strong>截至報告日無已知 critical CVE</strong>。
-        <code>System.Drawing.Common</code> 8.0+ 已脫離 CVE-2023-31056 的影響範圍。
+        所有套件皆為 .NET 10 對應的近期版本，<strong>截至報告日無已知 critical CVE</strong>。
       </p>
 
-      <div class="callout warn">
-        <strong>注意：</strong>.NET 8 的官方支援期至 <strong>2026-11</strong> 結束。若公司資安政策禁用
-        EOL runtime，最遲應於 2026 年第 4 季前完成升級至 .NET 10 LTS（或評估 .NET 9）。
+      <div class="callout">
+        <strong>v1.3 升級備註：</strong>原 .NET 8 LTS（EOL 2026-11）已升級至 .NET 10 LTS（EOL 2028-11），
+        延長 2 年支援期。<code>Microsoft.Extensions.*</code> 同步升至 10.0.7。
+        <code>System.Drawing.Common</code> 與 <code>System.Net.Http</code>、<code>System.Text.RegularExpressions</code>
+        在 .NET 10 已併入 BCL，移除原先的顯式 PackageReference（NU1510 警告自動消除）。
       </div>
     </section>
 
@@ -851,8 +875,8 @@
           類別：套件治理
         </div>
         <p>
-          目前所有套件無已知 critical CVE，但 .NET 8 將於 2026-11 結束 LTS；
-          需於 EOL 前完成 runtime 升級。
+          目前所有套件無已知 critical CVE。.NET 10 LTS 支援至 2028-11，
+          下次 LTS 升級評估期約於 2028 年第 2 季。
         </p>
         <p><strong>建議：</strong>每季執行一次 <code>dotnet list package --outdated --vulnerable</code>。</p>
       </div>
@@ -919,11 +943,106 @@
         <tr><td>Tender.Crawler.Tests（單元測試）</td><td>58 / 58 通過</td></tr>
         <tr><td>Tender.Storage.Tests（單元測試）</td><td>24 / 24 通過</td></tr>
         <tr><td>WiX MSI build</td><td>產出 <code>TenderSearch.msi</code> 成功</td></tr>
+        <tr><td>本機 vulnerable package audit</td><td>8 csproj × 0 known vuln（含遞移依賴）</td></tr>
       </table>
 
+      <h3>6.3 GitHub Actions 端到端驗證（v1.2 新增）</h3>
       <p>
-        所有修補皆於本機 Windows 11 環境通過 build 與 unit test 全綠，
-        並於 GitHub Actions（windows-latest）pipeline 上配置 audit、SHA256 與套件監控自動執行。
+        除本機驗證外，main 分支的兩次 commit 已實際觸發 GitHub Actions pipeline 走完全流程：
+      </p>
+      <table>
+        <tr><th>Run</th><th>觸發 commit</th><th>結果</th></tr>
+        <tr>
+          <td>CI (dev)</td>
+          <td><code>fixed data cnt for daily</code></td>
+          <td>✅ 全綠（5 步驟，含 audit）</td>
+        </tr>
+        <tr>
+          <td>Build and Release MSI (main)</td>
+          <td><code>fixed data cnt for daily</code></td>
+          <td>✅ 全綠（13 步驟全過）</td>
+        </tr>
+      </table>
+      <p>
+        最新自動發佈 release tag <code>v1.4.13309.510</code> 含完整 assets：
+      </p>
+      <ul>
+        <li><code>TenderSearch.msi</code>（self-contained 含 .NET 10 runtime）</li>
+        <li><code>TenderSearch.msi.sha256</code>（82 bytes，<code>Get-FileHash</code> 計算）</li>
+      </ul>
+
+      <h3>6.4 v1.4 增量功能與安全相關修補</h3>
+      <p>
+        v1.3 之後新增的程式碼皆經獨立安全審查，<strong>未引入新弱點</strong>。下表為對應變動：
+      </p>
+      <table>
+        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+        <tr>
+          <td rowspan="2">Bug 修補</td>
+          <td>排程任務 Command 引號污染</td>
+          <td><code>ScheduledTaskInstaller.cs</code></td>
+          <td>原 <code>schtasks /TR "\"<exe>\" args"</code> 會把整段含引號塞進
+            <code>&lt;Command&gt;</code>，Task Scheduler 找不到 exe 永遠卡 Queued。
+            改用 XML 模板 + <code>schtasks /XML</code> 匯入，分離 <code>Command</code> 與
+            <code>Arguments</code>。</td>
+        </tr>
+        <tr>
+          <td>排程任務筆電拔電卡 Queued</td>
+          <td><code>ScheduledTaskInstaller.cs</code></td>
+          <td>schtasks CLI 預設 <code>DisallowStartIfOnBatteries=true</code>，筆電拔電後
+            task 觸發但永不執行。XML 顯式設 <code>false</code>，並加
+            <code>StartWhenAvailable=true</code>（電腦睡眠後喚醒會補跑）、
+            <code>ExecutionTimeLimit=PT30M</code>（卡住 30 分自動殺）。</td>
+        </tr>
+        <tr>
+          <td rowspan="2">UX 改善</td>
+          <td>FileSystemWatcher 自動 reload</td>
+          <td><code>ShellViewModel.cs</code></td>
+          <td>監聽 <code>%LocalAppData%\TenderSearch\data\</code> 下 <code>summary.json</code>
+            變動，debounce 500ms 後自動重整行事曆。路徑硬編、不執行檔案內容、僅觸發 UI reload。</td>
+        </tr>
+        <tr>
+          <td>行事曆週欄 / 補抓 / Popup Calendar</td>
+          <td><code>MonthlyCalendarView.xaml</code> / <code>DailyQueryView.xaml</code></td>
+          <td>純 WPF binding 與 DataTrigger，無外部資料解析。「📥 補抓某天」按鈕沿用既有
+            <code>CrawlerLauncher</code>（subprocess 隔離 + 結構化引數）。</td>
+        </tr>
+        <tr>
+          <td>檔案輸出</td>
+          <td>Excel 匯出檔名範圍化</td>
+          <td><code>DailyQueryViewModel.cs</code></td>
+          <td>跨日範圍時檔名加起訖日（<code>標案_yyyyMMdd~yyyyMMdd.xlsx</code>）。
+            兩個日期皆為 <code>DateOnly</code> 強型別格式化，無使用者輸入字串拼接。</td>
+        </tr>
+      </table>
+
+      <h3>6.5 v1.4 重掃驗證</h3>
+      <table>
+        <tr><th>驗證項目</th><th>結果</th></tr>
+        <tr><td><code>dotnet build Tender.slnx</code>（.NET 10）</td><td>0 errors / 0 warnings</td></tr>
+        <tr><td>單元測試（Core / Crawler / Storage）</td><td>78 + 58 + 24 = 160 / 160 通過</td></tr>
+        <tr><td>本機 vulnerable package audit（8 csproj）</td><td>0 known vulnerability（含 transitive）</td></tr>
+        <tr><td>WiX MSI 端到端 build</td><td>產出 <code>TenderSearch.msi</code> 70.0 MB（含 .NET 10 self-contained runtime）</td></tr>
+        <tr><td>Task Scheduler 觸發實測（筆電電池）</td><td>✅ 觸發後 ~3 秒內完成抓取、寫入 summary.json，FileSystemWatcher 自動刷新行事曆</td></tr>
+      </table>
+
+      <h3>6.6 Dependabot 啟用首日成果</h3>
+      <p>
+        Dependabot 啟用後第一次掃描自動開啟以下 6 個 PR，<strong>皆為例行版本升級、無安全性 advisory 驅動</strong>，
+        證明監控管道暢通：
+      </p>
+      <table>
+        <tr><th>PR</th><th>套件</th><th>升級</th><th>類型</th></tr>
+        <tr><td>#3</td><td>actions/checkout</td><td>5 → 6</td><td>GitHub Action</td></tr>
+        <tr><td>#4</td><td>AngleSharp</td><td>1.1.2 → 1.4.0</td><td>NuGet</td></tr>
+        <tr><td>#5</td><td>ClosedXML</td><td>0.104.2 → 0.105.0</td><td>NuGet</td></tr>
+        <tr><td>#6</td><td>CommunityToolkit.Mvvm</td><td>8.3.2 → 8.4.2</td><td>NuGet</td></tr>
+        <tr><td>#7</td><td>coverlet.collector</td><td>6.0.0 → 10.0.0</td><td>NuGet（測試）</td></tr>
+        <tr><td>#8</td><td>FluentAssertions</td><td>6.12.1 → 8.9.0</td><td>NuGet（測試）</td></tr>
+      </table>
+      <p>
+        <strong>處置建議：</strong>每月固定時間檢視 Dependabot PR，逐一 merge 或拒絕。
+        若 PR 帶 <code>security</code> 標籤（含 advisory）應優先處理。
       </p>
     </section>
 
@@ -966,7 +1085,7 @@
         <tr><td>來源</td><td>內部開發；source code 在公司 GitHub</td></tr>
         <tr><td>用途</td><td>業務人員每日查閱政府公開招標資料</td></tr>
         <tr><td>使用者規模</td><td>內部少量（個位數同仁）</td></tr>
-        <tr><td>安裝包形式</td><td>Windows MSI（self-contained，內含 .NET 8 Runtime）</td></tr>
+        <tr><td>安裝包形式</td><td>Windows MSI（self-contained，內含 .NET 10 Runtime）</td></tr>
         <tr><td>安裝位置</td><td><code>C:\Program Files\TenderSearch\</code></td></tr>
         <tr><td>資料儲存</td><td><code>%LocalAppData%\TenderSearch\</code>（純 JSON）</td></tr>
         <tr><td>所需執行權限</td><td>一般使用者；安裝時需 admin（寫入 Program Files）</td></tr>
@@ -1046,10 +1165,10 @@ dotnet test tests/Tender.Core.Tests/Tender.Core.Tests.csproj --no-build
 dotnet test tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj --no-build
 dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
 
-# 建置 self-contained MSI（含 .NET 8 runtime, ~80MB）
+# 建置 self-contained MSI（含 .NET 10 runtime, ~80MB）
 .\build\build-msi.ps1
 
-# 建置 framework-dependent slim MSI（~5MB，需先裝 .NET 8 Desktop Runtime）
+# 建置 framework-dependent slim MSI（~5MB，需先裝 .NET 10 Desktop Runtime）
 .\build\build-msi.ps1 -Slim
 </code></pre>
 
@@ -1070,7 +1189,7 @@ dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
     </section>
 
     <footer class="report-footer">
-      本報告為 TenderSearch 專案內部技術文件 — 版本 1.1 / 2026-05-10
+      本報告為 TenderSearch 專案內部技術文件 — 版本 1.4 / 2026-05-10（.NET 10 + UX 增量功能完整重掃）
     </footer>
 
   </main>

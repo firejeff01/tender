@@ -7,10 +7,30 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <conv:ZeroToVisibilityConverter x:Key="ZeroToVis" />
 
+        <!-- 週欄表頭文字共用 style：14 半粗體置中，預設深色（週間） -->
+        <Style x:Key="WeekHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        </Style>
+
         <DataTemplate x:Key="DayCellTemplate">
+          <Grid Margin="3">
+            <Grid.Style>
+              <Style TargetType="Grid">
+                <Style.Triggers>
+                  <!-- 占位格（月初對齊週欄用）：保留版面但完全不顯示，避免使用者點到 -->
+                  <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+                    <Setter Property="Visibility" Value="Hidden" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Grid.Style>
             <Button Command="{Binding DataContext.NavigateToDayCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                     CommandParameter="{Binding Date}"
-                    Margin="3" Padding="0"
+                    Padding="0"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
                     Cursor="Hand">
@@ -94,6 +114,28 @@
                                VerticalAlignment="Center" />
                 </Grid>
             </Button>
+
+            <!-- 無資料天：右上角顯示「📥 補抓」小按鈕；跟 cell button 是同 Grid 的兄弟，
+                 不繼承 cell button 的 IsEnabled=False，且 z-order 在上方所以會先吃到點擊。 -->
+            <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="0,4,4,0" Padding="4,1"
+                    Content="📥" FontSize="11"
+                    ToolTip="補抓這一天的資料"
+                    Cursor="Hand"
+                    Command="{Binding DataContext.FillDayCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                    CommandParameter="{Binding Date}">
+              <Button.Style>
+                <Style TargetType="Button">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Summary}" Value="{x:Null}">
+                      <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+            </Button>
+          </Grid>
         </DataTemplate>
     </UserControl.Resources>
 
@@ -142,6 +184,13 @@
                     </StackPanel>
                 </Border>
 
+                <Button Content="🔄"
+                        Command="{Binding LoadMonthCommand}"
+                        ToolTip="重新整理當月資料"
+                        Padding="8,5" Margin="8,0,0,0"
+                        VerticalAlignment="Center" Cursor="Hand"
+                        FontSize="14" />
+
                 <Border Background="{StaticResource ErrorLightBrush}" CornerRadius="6" Padding="12,5"
                         Margin="8,0,0,0" VerticalAlignment="Center"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
@@ -161,6 +210,25 @@
                    HorizontalAlignment="Center" Margin="0,8"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}" />
+
+        <!-- 週欄表頭：card 樣式 + 底色與下方行事曆對齊 (同 Padding 14)。
+             週末（日/六）用 ErrorBrush 強調，週間用 TextPrimary。 -->
+        <Border DockPanel.Dock="Top"
+                Background="{StaticResource BgCardBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+          <UniformGrid Columns="7" Height="42" Margin="14,0">
+            <TextBlock Text="日" Style="{StaticResource WeekHeaderTextStyle}"
+                       Foreground="{StaticResource ErrorBrush}" />
+            <TextBlock Text="一" Style="{StaticResource WeekHeaderTextStyle}" />
+            <TextBlock Text="二" Style="{StaticResource WeekHeaderTextStyle}" />
+            <TextBlock Text="三" Style="{StaticResource WeekHeaderTextStyle}" />
+            <TextBlock Text="四" Style="{StaticResource WeekHeaderTextStyle}" />
+            <TextBlock Text="五" Style="{StaticResource WeekHeaderTextStyle}" />
+            <TextBlock Text="六" Style="{StaticResource WeekHeaderTextStyle}"
+                       Foreground="{StaticResource ErrorBrush}" />
+          </UniformGrid>
+        </Border>
 
         <ItemsControl ItemsSource="{Binding View.Days}"
                       ItemTemplate="{StaticResource DayCellTemplate}"

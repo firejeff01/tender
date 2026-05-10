@@ -30,6 +30,19 @@ public partial class DailyQueryView : UserControl
         }
     }
 
+    private void DateFromCalendar_SelectedDatesChanged(
+        object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // 點選日期後關閉 popup（透過 ToggleButton.IsChecked 連動）
+        DateFromToggle.IsChecked = false;
+    }
+
+    private void DateToCalendar_SelectedDatesChanged(
+        object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        DateToToggle.IsChecked = false;
+    }
+
     private void DigitsOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
         // 只接受 0-9

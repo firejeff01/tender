@@ -22,4 +22,6 @@ public sealed record MonthlyCalendarDay
     public DailySummary? Summary { get; init; }
     /// <summary>summary.json 存在但解析失敗。</summary>
     public bool IsCorrupted { get; init; }
+    /// <summary>占位格：月初前對齊週欄用，UI 渲染為空白不可點擊。</summary>
+    public bool IsPlaceholder { get; init; }
 }

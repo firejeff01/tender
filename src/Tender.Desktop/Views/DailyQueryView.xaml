@@ -136,20 +136,57 @@
                 <Button Content="◀ 前一日" Command="{Binding GoPreviousDayCommand}" Padding="10,5" Margin="0,0,8,0" />
                 <Button Content="後一日 ▶" Command="{Binding GoNextDayCommand}" Padding="10,5" Margin="0,0,16,0" />
                 <Border Width="3" Background="{StaticResource PrimaryBrush}" CornerRadius="1.5" Margin="0,2,8,2" />
+
+                <!-- 起日：文字 + 📅 ToggleButton + Popup Calendar -->
                 <TextBlock Text="{Binding Date, StringFormat='{}{0:yyyy-MM-dd}'}"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            VerticalAlignment="Center" />
+                <ToggleButton x:Name="DateFromToggle"
+                              Content="📅"
+                              Padding="6,3" Margin="6,0,0,0" FontSize="13"
+                              VerticalAlignment="Center" Cursor="Hand"
+                              ToolTip="變更起日" />
+                <Popup PlacementTarget="{Binding ElementName=DateFromToggle}"
+                       Placement="Bottom"
+                       IsOpen="{Binding IsChecked, ElementName=DateFromToggle}"
+                       StaysOpen="False"
+                       AllowsTransparency="True">
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="4"
+                            SnapsToDevicePixels="True">
+                        <Calendar SelectedDate="{Binding Date, Converter={StaticResource DateOnlyToDateTime}, Mode=TwoWay}"
+                                  SelectedDatesChanged="DateFromCalendar_SelectedDatesChanged" />
+                    </Border>
+                </Popup>
 
-                <!-- 跨日範圍：可選 DateTo -->
                 <TextBlock Text="～" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"
-                           VerticalAlignment="Center" Margin="8,0,8,0" />
-                <DatePicker SelectedDate="{Binding DateTo, Converter={StaticResource DateOnlyToDateTime}}"
-                            Width="140" Height="30" VerticalAlignment="Center"
-                            ToolTip="設定跨日查詢迄止日（空白＝只查 Date 一天）" />
-                <Button Content="✖" Command="{Binding ClearDateRangeCommand}"
-                        Padding="6,3" Margin="2,0,0,0" FontSize="11"
-                        ToolTip="清除跨日範圍" />
+                           VerticalAlignment="Center" Margin="10,0,10,0" />
+
+                <!-- 訖日：同樣文字 + 📅 ToggleButton + Popup Calendar -->
+                <TextBlock Text="{Binding DateTo, StringFormat='{}{0:yyyy-MM-dd}', TargetNullValue='—'}"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleButton x:Name="DateToToggle"
+                              Content="📅"
+                              Padding="6,3" Margin="6,0,0,0" FontSize="13"
+                              VerticalAlignment="Center" Cursor="Hand"
+                              ToolTip="變更訖日" />
+                <Popup PlacementTarget="{Binding ElementName=DateToToggle}"
+                       Placement="Bottom"
+                       IsOpen="{Binding IsChecked, ElementName=DateToToggle}"
+                       StaysOpen="False"
+                       AllowsTransparency="True">
+                    <Border Background="{StaticResource BgCardBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" Padding="4"
+                            SnapsToDevicePixels="True">
+                        <Calendar SelectedDate="{Binding DateTo, Converter={StaticResource DateOnlyToDateTime}, Mode=TwoWay}"
+                                  SelectedDatesChanged="DateToCalendar_SelectedDatesChanged" />
+                    </Border>
+                </Popup>
 
                 <TextBlock Margin="20,0,0,0" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}">
                     <TextBlock.Text>

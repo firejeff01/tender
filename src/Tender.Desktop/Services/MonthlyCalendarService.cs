@@ -16,9 +16,25 @@ public sealed class MonthlyCalendarService : IMonthlyCalendarService
     public async Task<MonthlyCalendarView> LoadMonthAsync(int year, int month, CancellationToken ct = default)
     {
         var daysInMonth = DateTime.DaysInMonth(year, month);
-        var days = new List<MonthlyCalendarDay>(daysInMonth);
-        var monthlyTotal = 0;
+        var firstDay = new DateOnly(year, month, 1);
+        // Sunday=0, Monday=1, ..., Saturday=6 — 行事曆以週日開頭排版
+        var leadingPlaceholders = (int)firstDay.DayOfWeek;
 
+        var days = new List<MonthlyCalendarDay>(leadingPlaceholders + daysInMonth);
+
+        // 月初前的占位格，讓「日」排到第一欄
+        for (int i = 0; i < leadingPlaceholders; i++)
+        {
+            days.Add(new MonthlyCalendarDay
+            {
+                Date = firstDay.AddDays(-(leadingPlaceholders - i)),
+                Summary = null,
+                IsCorrupted = false,
+                IsPlaceholder = true,
+            });
+        }
+
+        var monthlyTotal = 0;
         for (int d = 1; d <= daysInMonth; d++)
         {
             ct.ThrowIfCancellationRequested();

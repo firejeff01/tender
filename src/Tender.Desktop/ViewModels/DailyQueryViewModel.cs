@@ -34,6 +34,9 @@ public partial class DailyQueryViewModel : ObservableObject
     /// <summary>批次操作期間 true，OnMarkChangedAsync 會跳過 disk I/O 與 ApplyFilter，由批次結束後統一觸發。</summary>
     private bool _suppressMarkSideEffects;
 
+    /// <summary>true 時 Date/DateTo 改動不會 auto-reload，命令路徑用以避免雙重 LoadAsync。</summary>
+    private bool _suppressDateAutoReload;
+
     [ObservableProperty]
     private DateOnly _date;
 
@@ -390,38 +393,50 @@ public partial class DailyQueryViewModel : ObservableObject
     [RelayCommand]
     private async Task GoPreviousDayAsync(CancellationToken ct)
     {
-        if (IsRangeMode)
+        _suppressDateAutoReload = true;
+        try
         {
-            // 跨日 mode：整段往前挪一天
-            DateTo = DateTo!.Value.AddDays(-1);
-            Date = Date.AddDays(-1);
+            if (IsRangeMode)
+            {
+                // 跨日 mode：整段往前挪一天
+                DateTo = DateTo!.Value.AddDays(-1);
+                Date = Date.AddDays(-1);
+            }
+            else
+            {
+                Date = Date.AddDays(-1);
+            }
         }
-        else
-        {
-            Date = Date.AddDays(-1);
-        }
+        finally { _suppressDateAutoReload = false; }
         await LoadAsync(ct);
     }
 
     [RelayCommand]
     private async Task GoNextDayAsync(CancellationToken ct)
     {
-        if (IsRangeMode)
+        _suppressDateAutoReload = true;
+        try
         {
-            DateTo = DateTo!.Value.AddDays(1);
-            Date = Date.AddDays(1);
+            if (IsRangeMode)
+            {
+                DateTo = DateTo!.Value.AddDays(1);
+                Date = Date.AddDays(1);
+            }
+            else
+            {
+                Date = Date.AddDays(1);
+            }
         }
-        else
-        {
-            Date = Date.AddDays(1);
-        }
+        finally { _suppressDateAutoReload = false; }
         await LoadAsync(ct);
     }
 
     [RelayCommand]
     private async Task ClearDateRangeAsync(CancellationToken ct)
     {
-        DateTo = null;
+        _suppressDateAutoReload = true;
+        try { DateTo = null; }
+        finally { _suppressDateAutoReload = false; }
         await LoadAsync(ct);
     }
 
@@ -449,7 +464,10 @@ public partial class DailyQueryViewModel : ObservableObject
             return;
         }
 
-        var suggested = $"標案_{Date:yyyyMMdd}.xlsx";
+        // 範圍查詢時檔名含起訖日；單日只放單一日期
+        var suggested = IsRangeMode
+            ? $"標案_{Date:yyyyMMdd}~{DateTo!.Value:yyyyMMdd}.xlsx"
+            : $"標案_{Date:yyyyMMdd}.xlsx";
         var savePath = _saveDialog.ShowSaveAsXlsx(suggested);
         if (string.IsNullOrEmpty(savePath)) return;
 
@@ -481,9 +499,30 @@ public partial class DailyQueryViewModel : ObservableObject
     partial void OnDateToChanged(DateOnly? value)
     {
         OnPropertyChanged(nameof(IsRangeMode));
-        _ = LoadCommand.ExecuteAsync(null);
+        if (!_suppressDateAutoReload)
+            _ = LoadCommand.ExecuteAsync(null);
     }
-    partial void OnDateChanged(DateOnly value) => OnPropertyChanged(nameof(IsRangeMode));
+    partial void OnDateChanged(DateOnly value)
+    {
+        OnPropertyChanged(nameof(IsRangeMode));
+        if (!_suppressDateAutoReload)
+            _ = LoadCommand.ExecuteAsync(null);
+    }
+
+    /// <summary>原子地設定起／訖日；批次操作避免每個 setter 都觸發 reload。</summary>
+    public void SetDates(DateOnly date, DateOnly? dateTo)
+    {
+        _suppressDateAutoReload = true;
+        try
+        {
+            Date = date;
+            DateTo = dateTo;
+        }
+        finally
+        {
+            _suppressDateAutoReload = false;
+        }
+    }
     partial void OnSelectedItemChanged(TenderItemViewModel? value)
     {
         // 點選任一列即視為已讀；snapshot 模式下不會觸發重新篩選，

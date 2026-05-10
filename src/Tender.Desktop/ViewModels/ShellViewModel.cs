@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,11 @@ public partial class ShellViewModel : ObservableObject
     private readonly IDataCleanupService _cleanupService;
     private readonly INotificationService _notifications;
     private readonly IAppSettingsRepository _appSettingsRepo;
+
+    // 監聽 data 資料夾 summary.json 變動，讓 Task Scheduler 半夜跑完後
+    // 使用者下次回到 app 不需手動切月份就看到新狀態。
+    private FileSystemWatcher? _dataWatcher;
+    private CancellationTokenSource? _refreshDebounceCts;
 
     public MonthlyCalendarViewModel CalendarVm { get; }
 
@@ -81,6 +87,62 @@ public partial class ShellViewModel : ObservableObject
         _cleanupService = cleanupService;
         _notifications = notifications;
         _appSettingsRepo = appSettingsRepo;
+
+        _dataWatcher = TryStartDataWatcher();
+    }
+
+    private FileSystemWatcher? TryStartDataWatcher()
+    {
+        try
+        {
+            // FileSystemWatcher 要求路徑存在；首次啟動 data root 可能還沒建立。
+            Directory.CreateDirectory(_dataPaths.DataRoot);
+
+            var w = new FileSystemWatcher(_dataPaths.DataRoot)
+            {
+                Filter = "summary.json",
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.LastWrite
+                             | NotifyFilters.FileName
+                             | NotifyFilters.Size,
+            };
+            w.Changed += OnSummaryChanged;
+            w.Created += OnSummaryChanged;
+            w.Renamed += OnSummaryChanged;
+            w.EnableRaisingEvents = true;
+            return w;
+        }
+        catch
+        {
+            // GP 限制 / 防毒鎖檔等情況下靜默放棄；使用者仍可手動切月份重新整理
+            return null;
+        }
+    }
+
+    private void OnSummaryChanged(object sender, FileSystemEventArgs e)
+    {
+        // AtomicJsonWriter 寫入會經 .tmp + rename，連續觸發多次事件；
+        // debounce 500ms 取最後一次再 reload。
+        _refreshDebounceCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _refreshDebounceCts = cts;
+
+        _ = Task.Delay(500, cts.Token).ContinueWith(t =>
+        {
+            if (t.IsCanceled) return;
+            Application.Current?.Dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
+                    await RefreshTodayCrawledAsync(CancellationToken.None);
+                }
+                catch
+                {
+                    // 自動重新整理失敗不影響主功能
+                }
+            });
+        }, TaskScheduler.Default);
     }
 
     [RelayCommand]
@@ -226,7 +288,7 @@ public partial class ShellViewModel : ObservableObject
         }
 
         var vm = _dailyVmFactory();
-        vm.Date = date;
+        vm.SetDates(date, date);  // 預設起 = 訖 = 點選那天，suppression 避免 setter 各觸發一次 reload
         CurrentDailyQueryVm = vm;
         OnPropertyChanged(nameof(IsDailyQueryVisible));
         await vm.LoadCommand.ExecuteAsync(null);
@@ -296,4 +358,50 @@ public partial class ShellViewModel : ObservableObject
     }
 
     private bool CanRunCrawler() => !IsCrawlerRunning;
+
+    /// <summary>
+    /// 對指定日手動補抓資料。對應行事曆「無資料天」cell 右上角的 📥 按鈕。
+    /// 跑完後 FileSystemWatcher 會自動 reload 行事曆，不需手動觸發。
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanRunCrawler))]
+    private async Task FillDayAsync(DateOnly date)
+    {
+        var progress = new Progress<CrawlerProgressEvent>(evt =>
+        {
+            CrawlerStatusMessage = $"補抓 {date:MM/dd}：{evt.Message}";
+            if (evt.PercentComplete.HasValue)
+                CrawlerProgressValue = evt.PercentComplete.Value;
+        });
+
+        try
+        {
+            IsCrawlerRunning = true;
+            RunCrawlerNowCommand.NotifyCanExecuteChanged();
+            FillDayCommand.NotifyCanExecuteChanged();
+
+            CrawlerStatusMessage = $"啟動補抓 {date:yyyy-MM-dd}...";
+            CrawlerProgressValue = 0;
+
+            var exitCode = await _crawlerLauncher.LaunchAsync(
+                CrawlerMode.Manual, date, progress, CancellationToken.None);
+
+            CrawlerStatusMessage = exitCode switch
+            {
+                0 => null,
+                4 => "另一個爬蟲已在執行",
+                _ => $"補抓 {date:MM/dd} 結束，exit={exitCode}",
+            };
+            CrawlerProgressValue = 0;
+        }
+        catch (Exception ex)
+        {
+            CrawlerStatusMessage = $"補抓失敗：{ex.Message}";
+        }
+        finally
+        {
+            IsCrawlerRunning = false;
+            RunCrawlerNowCommand.NotifyCanExecuteChanged();
+            FillDayCommand.NotifyCanExecuteChanged();
+        }
+    }
 }

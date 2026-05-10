@@ -8,8 +8,11 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <!--
+      System.Drawing.Common 在 .NET 10 隨 UseWindowsForms/UseWPF 透過
+      Microsoft.WindowsDesktop.App SDK 自動引入，不需要顯式 PackageReference。
+    -->
   </ItemGroup>
 
   <PropertyGroup>
@@ -18,7 +21,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

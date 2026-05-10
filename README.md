@@ -19,8 +19,8 @@
 ### 系統需求
 
 - **作業系統**：Windows 10/11 (x64)
-- **執行環境**：**無需另外安裝**。MSI 預設為 self-contained，內含 .NET 8 Desktop Runtime。
-  - 若要建小體積版（需使用者另外裝 .NET 8 runtime）：`.\build\build-msi.ps1 -Slim`
+- **執行環境**：**無需另外安裝**。MSI 預設為 self-contained，內含 .NET 10 Desktop Runtime。
+  - 若要建小體積版（需使用者另外裝 .NET 10 runtime）：`.\build\build-msi.ps1 -Slim`
 
 ---
 
@@ -146,7 +146,7 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 # 建置 MSI（framework-dependent，4.8 MB）
 .\build\build-msi.ps1
 
-# 建置 self-contained MSI（含 .NET 8 runtime，~80 MB）
+# 建置 self-contained MSI（含 .NET 10 runtime，~80 MB）
 .\build\build-msi.ps1 -SelfContained
 
 # 重新生成 ICO（PNG 變動時）
@@ -155,7 +155,7 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 
 ### 主要技術棧
 
-- **.NET 8 / C# 12**（Crawler + Core + Storage：cross-platform；Desktop：win-only WPF）
+- **.NET 10 / C# 14**（Crawler + Core + Storage：cross-platform；Desktop：win-only WPF）
 - **WPF + CommunityToolkit.Mvvm**（[ObservableProperty] / [RelayCommand] 源產生器）
 - **Microsoft.Extensions.Hosting**（Desktop 內 IHost + DI）
 - **AngleSharp**（HTML 解析）
@@ -192,10 +192,10 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 
 ### 雙擊桌面捷徑沒反應
 
-原因：未安裝 .NET 8 Desktop Runtime。
+原因：未安裝 .NET 10 Desktop Runtime。
 
 解法：
-- 下載 .NET 8 Desktop Runtime：<https://dotnet.microsoft.com/download/dotnet/8.0/runtime>
+- 下載 .NET 10 Desktop Runtime：<https://dotnet.microsoft.com/download/dotnet/10.0/runtime>
 - 或重建為 self-contained MSI：`.\build\build-msi.ps1 -SelfContained`
 
 ### 立即更新失敗 / 顯示 exit code 4
@@ -235,7 +235,7 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
    ```
 
 3. **GitHub Actions 自動執行**（約 3~5 分鐘）：
-   - 拉程式碼 → 裝 .NET 8 + WiX 5
+   - 拉程式碼 → 裝 .NET 10 + WiX 5
    - 跑全部 unit tests
    - `build-msi.ps1 -Version 1.1.509.1730`
    - 用該 tag 自動建 Release，把 `TenderSearch.msi` 上傳為 asset
@@ -254,7 +254,7 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 
 ```powershell
 .\build\build-msi.ps1                       # 自動產生時間版本號（預設 self-contained ~80MB）
-.\build\build-msi.ps1 -Slim                 # framework-dependent ~5MB（需使用者已裝 .NET 8）
+.\build\build-msi.ps1 -Slim                 # framework-dependent ~5MB（需使用者已裝 .NET 10）
 .\build\build-msi.ps1 -Version "1.0.0.0"   # 強制指定版本（測試降版）
 ```
 

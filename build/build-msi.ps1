@@ -16,8 +16,8 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
-    # 預設 self-contained（含 .NET 8 runtime，~80MB，使用者不用先裝 runtime）。
-    # 加 -Slim 改成 framework-dependent（~5MB，但使用者要先裝 .NET 8 Desktop Runtime）。
+    # 預設 self-contained（含 .NET 10 runtime，~80MB，使用者不用先裝 runtime）。
+    # 加 -Slim 改成 framework-dependent（~5MB，但使用者要先裝 .NET 10 Desktop Runtime）。
     [switch]$Slim,
     # 舊參數，保留向下相容（與 Slim 相反義）
     [switch]$SelfContained,
@@ -56,7 +56,7 @@ if (-not $Version) {
 Write-Host "=== TenderSearch MSI Build ===" -ForegroundColor Cyan
 Write-Host "Repo: $repoRoot"
 Write-Host "Configuration: $Configuration"
-Write-Host ("Mode: {0}" -f $(if ($useSelfContained) { 'self-contained (含 .NET 8 runtime, ~80MB)' } else { 'framework-dependent (slim, ~5MB)' }))
+Write-Host ("Mode: {0}" -f $(if ($useSelfContained) { 'self-contained (含 .NET 10 runtime, ~80MB)' } else { 'framework-dependent (slim, ~5MB)' }))
 Write-Host "Version: $Version"
 
 # Step 1: Clean publish/dist

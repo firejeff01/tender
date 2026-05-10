@@ -116,7 +116,7 @@ public sealed class CrawlerLauncher : ICrawlerLauncher
         var siblingCrawler = Path.GetFullPath(Path.Combine(baseDir, "..", "crawler", "Tender.Crawler.exe"));
         if (File.Exists(siblingCrawler)) return siblingCrawler;
 
-        // 3. dev 環境：src/Tender.Desktop/bin/<config>/net8.0-windows → src/Tender.Crawler/bin/<config>/net8.0
+        // 3. dev 環境：src/Tender.Desktop/bin/<config>/net10.0-windows → src/Tender.Crawler/bin/<config>/net10.0
 #if DEBUG
         const string config = "Debug";
 #else
@@ -124,7 +124,7 @@ public sealed class CrawlerLauncher : ICrawlerLauncher
 #endif
         var devPath = Path.GetFullPath(Path.Combine(
             baseDir, "..", "..", "..", "..",
-            "Tender.Crawler", "bin", config, "net8.0", "Tender.Crawler.exe"));
+            "Tender.Crawler", "bin", config, "net10.0", "Tender.Crawler.exe"));
         if (File.Exists(devPath)) return devPath;
 
         return null;
