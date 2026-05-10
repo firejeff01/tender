@@ -115,7 +115,8 @@ public partial class App : Application
                 sp.GetRequiredService<IUpdateChecker>(),
                 sp.GetRequiredService<IBrowserLauncher>(),
                 sp.GetRequiredService<IDataCleanupService>(),
-                sp.GetRequiredService<INotificationService>()));
+                sp.GetRequiredService<INotificationService>(),
+                sp.GetRequiredService<IAppSettingsRepository>()));
 
         // Windows
         services.AddSingleton<ShellWindow>();

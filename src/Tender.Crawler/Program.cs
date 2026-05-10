@@ -138,11 +138,15 @@ public static class Program
         {
             // 不使用 AutomaticDecompression，避免在 Windows 某些環境下的問題
             // 若政府網站回傳 gzip，由 response.Content.ReadAsStringAsync 自動處理
-            AllowAutoRedirect = true,
+            AllowAutoRedirect = false,  // 改由 WhitelistedRedirectHandler 自行處理
             UseCookies = true,
             CookieContainer = new CookieContainer(),
         };
-        var httpClient = new HttpClient(httpHandler)
+        // 只有當 redirect Location 指向 web.pcc.gov.tw 才跟進，阻擋被導向他站
+        var redirectHandler = new WhitelistedRedirectHandler(
+            new[] { "web.pcc.gov.tw" },
+            httpHandler);
+        var httpClient = new HttpClient(redirectHandler)
         {
             Timeout = TimeSpan.FromSeconds(30),
         };
@@ -192,8 +196,10 @@ public static class Program
         Console.WriteLine("\n--- 直接 HTTP 診斷 ---");
         try
         {
-            using var diagHandler = new System.Net.Http.HttpClientHandler { AllowAutoRedirect = true };
-            using var diagClient = new System.Net.Http.HttpClient(diagHandler) { Timeout = TimeSpan.FromSeconds(10) };
+            using var diagHandler = new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false };
+            using var diagRedirect = new WhitelistedRedirectHandler(
+                new[] { "web.pcc.gov.tw" }, diagHandler);
+            using var diagClient = new System.Net.Http.HttpClient(diagRedirect) { Timeout = TimeSpan.FromSeconds(10) };
             diagClient.DefaultRequestHeaders.Add("User-Agent", "TenderSearch/1.0");
 
             var dateStr = targetDate.ToString("yyyy/MM/dd");
@@ -229,10 +235,12 @@ public static class Program
 
         using var handler = new HttpClientHandler
         {
-            AllowAutoRedirect = true,
+            AllowAutoRedirect = false,
             UseCookies = true,
         };
-        using var httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        using var pocRedirectHandler = new WhitelistedRedirectHandler(
+            new[] { "web.pcc.gov.tw" }, handler);
+        using var httpClient = new HttpClient(pocRedirectHandler) { Timeout = TimeSpan.FromSeconds(30) };
 
         var crawler = new HttpClientCrawler(httpClient, new SystemClock());
         var parser = new AngleSharpTenderParser();

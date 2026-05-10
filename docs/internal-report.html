@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>政府電子採購網標案查詢工具 — 技術架構暨資安審查報告</title>
+<style>
+  :root {
+    --c-bg: #f7f8fb;
+    --c-card: #ffffff;
+    --c-border: #e2e8f0;
+    --c-text: #0f172a;
+    --c-text-muted: #475569;
+    --c-text-dim: #64748b;
+    --c-primary: #1f4287;
+    --c-primary-dark: #0c2c5e;
+    --c-accent: #0ea5e9;
+    --c-code-bg: #f1f5f9;
+    --c-code-text: #334155;
+
+    --c-sev-critical-bg: #7f1d1d;
+    --c-sev-high-bg: #c2410c;
+    --c-sev-medium-bg: #b45309;
+    --c-sev-low-bg: #ca8a04;
+    --c-sev-info-bg: #475569;
+
+    --c-status-fixed-bg: #15803d;
+    --c-status-pending-bg: #b45309;
+    --c-status-na-bg: #475569;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Segoe UI",
+                 -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-size: 14.5px;
+    line-height: 1.7;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    max-width: 1280px;
+    margin: 0 auto;
+    gap: 32px;
+    padding: 0 24px;
+  }
+
+  aside.toc {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    padding: 20px 0;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  aside.toc h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--c-text-dim);
+    letter-spacing: 1.5px;
+    margin: 0 0 12px 0;
+  }
+  aside.toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-left: 2px solid var(--c-border);
+  }
+  aside.toc li { margin: 0; }
+  aside.toc a {
+    display: block;
+    padding: 6px 0 6px 14px;
+    color: var(--c-text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    margin-left: -2px;
+    border-left: 2px solid transparent;
+  }
+  aside.toc a:hover { color: var(--c-primary); border-left-color: var(--c-primary); }
+
+  main { padding: 24px 0 80px 0; min-width: 0; }
+
+  header.report-header {
+    background: linear-gradient(135deg, var(--c-primary) 0%, var(--c-primary-dark) 100%);
+    color: #fff;
+    padding: 36px 40px;
+    border-radius: 10px;
+    margin-bottom: 32px;
+    box-shadow: 0 6px 24px rgba(15, 42, 96, 0.18);
+  }
+  header.report-header h1 {
+    margin: 0 0 6px 0;
+    font-size: 26px;
+    line-height: 1.4;
+    letter-spacing: 0.3px;
+  }
+  header.report-header .subtitle {
+    opacity: 0.85;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  header.report-header .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px 24px;
+    font-size: 13px;
+  }
+  header.report-header .meta dt {
+    color: rgba(255,255,255,0.65);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+  header.report-header .meta dd {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+
+  section.card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  h2 {
+    font-size: 20px;
+    color: var(--c-primary);
+    margin: 0 0 4px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--c-border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2 .num {
+    color: var(--c-text-dim);
+    font-weight: 500;
+    font-size: 15px;
+    font-family: "Consolas", monospace;
+  }
+
+  h3 {
+    font-size: 16px;
+    color: var(--c-text);
+    margin: 24px 0 8px 0;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: 14.5px;
+    color: var(--c-text);
+    margin: 18px 0 6px 0;
+    font-weight: 600;
+  }
+
+  p { margin: 8px 0 12px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--c-border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--c-code-bg);
+    font-weight: 600;
+    color: var(--c-text-muted);
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td.center, th.center { text-align: center; }
+  td.nowrap { white-space: nowrap; }
+
+  code {
+    font-family: "Consolas", "SF Mono", "Cascadia Code", monospace;
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+  }
+
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: "Consolas", "SF Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 10px 0;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge.sev-critical { background: var(--c-sev-critical-bg); }
+  .badge.sev-high     { background: var(--c-sev-high-bg); }
+  .badge.sev-medium   { background: var(--c-sev-medium-bg); }
+  .badge.sev-low      { background: var(--c-sev-low-bg); }
+  .badge.sev-info     { background: var(--c-sev-info-bg); }
+  .badge.status-fixed   { background: var(--c-status-fixed-bg); }
+  .badge.status-pending { background: var(--c-status-pending-bg); }
+  .badge.status-na      { background: var(--c-status-na-bg); }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 14px;
+    margin: 16px 0 4px 0;
+  }
+  .summary-grid .stat {
+    background: var(--c-code-bg);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--c-primary);
+  }
+  .summary-grid .stat .label {
+    font-size: 11.5px;
+    color: var(--c-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .summary-grid .stat .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--c-text);
+    margin-top: 2px;
+  }
+
+  .finding {
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    background: #fefefe;
+  }
+  .finding.fixed { border-left: 4px solid var(--c-status-fixed-bg); }
+  .finding.pending { border-left: 4px solid var(--c-status-pending-bg); }
+  .finding-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .finding-head .id {
+    font-family: "Consolas", monospace;
+    color: var(--c-text-dim);
+    font-size: 13px;
+  }
+  .finding-head h3 {
+    margin: 0;
+    font-size: 15.5px;
+    flex: 1;
+  }
+  .finding .meta-row {
+    font-size: 12.5px;
+    color: var(--c-text-dim);
+    margin-bottom: 8px;
+  }
+  .finding .meta-row code { font-size: 12px; }
+
+  .ascii-diagram {
+    background: #f8fafc;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: "Consolas", monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--c-text-muted);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  ul, ol { padding-left: 22px; }
+  ul li, ol li { margin: 4px 0; }
+
+  .callout {
+    border-left: 3px solid var(--c-accent);
+    background: #ecfeff;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 13.5px;
+    margin: 14px 0;
+    color: #0c4a6e;
+  }
+  .callout.warn {
+    border-color: #d97706;
+    background: #fffbeb;
+    color: #78350f;
+  }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid var(--c-border);
+    color: var(--c-text-dim);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; padding: 0 16px; }
+    aside.toc { position: static; max-height: none; }
+    section.card { padding: 20px 18px; }
+    header.report-header { padding: 24px 22px; }
+  }
+
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .layout { grid-template-columns: 1fr; padding: 0; gap: 0; max-width: none; }
+    aside.toc { display: none; }
+    section.card { box-shadow: none; border: 1px solid #cbd5e1; page-break-inside: avoid; }
+    header.report-header { box-shadow: none; }
+    pre { white-space: pre-wrap; }
+    .finding { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="toc">
+    <h3>目錄</h3>
+    <ol>
+      <li><a href="#sec-summary">1. 總覽摘要</a></li>
+      <li><a href="#sec-tech">2. 技術選型</a></li>
+      <li><a href="#sec-arch">3. 設計架構</a></li>
+      <li><a href="#sec-security">4. 資安設計</a></li>
+      <li><a href="#sec-scan">5. 弱點掃描結果</a></li>
+      <li><a href="#sec-remediation">6. 修補執行紀錄</a></li>
+      <li><a href="#sec-pending">7. 待辦項目</a></li>
+      <li><a href="#sec-it">8. 給 IT 部門資訊</a></li>
+      <li><a href="#sec-appendix">9. 附錄</a></li>
+    </ol>
+  </aside>
+
+  <main>
+
+    <header class="report-header">
+      <h1>政府電子採購網標案查詢工具<br>技術架構暨資安審查報告</h1>
+      <div class="subtitle">TenderSearch — Technical Architecture &amp; Security Assessment</div>
+      <dl class="meta">
+        <div><dt>產品名稱</dt><dd>TenderSearch</dd></div>
+        <div><dt>分類</dt><dd>內部桌面工具（Windows）</dd></div>
+        <div><dt>報告日期</dt><dd>2026-05-10</dd></div>
+        <div><dt>報告版本</dt><dd>1.1</dd></div>
+        <div><dt>掃描方法</dt><dd>靜態分析（SAST）</dd></div>
+        <div><dt>單元測試覆蓋</dt><dd>160 / 160 通過</dd></div>
+      </dl>
+    </header>
+
+    <!-- ================== 1. 總覽摘要 ================== -->
+    <section class="card" id="sec-summary">
+      <h2><span class="num">01</span> 總覽摘要</h2>
+
+      <h3>1.1 工具用途</h3>
+      <p>
+        TenderSearch 是一個 Windows 桌面工具，用於每日自動抓取
+        <strong>政府電子採購網（web.pcc.gov.tw）</strong>的招標公告，
+        並提供月份行事曆瀏覽、即時搜尋、關鍵字篩選、收藏與 Excel 匯出等功能，
+        協助業務人員快速掌握每日新標案。
+      </p>
+
+      <h3>1.2 部署模式</h3>
+      <ul>
+        <li><strong>單機桌面工具</strong>：每位使用者本機獨立安裝，無共享伺服器、無多人協作。</li>
+        <li><strong>每日排程</strong>：透過 Windows Task Scheduler 在指定時間（預設 17:00）自動執行抓取。</li>
+        <li><strong>無使用者帳號</strong>：不需登入、不存任何認證、不存個資。</li>
+      </ul>
+
+      <h3>1.3 資安關鍵指標</h3>
+      <div class="summary-grid">
+        <div class="stat">
+          <div class="label">外連端點</div>
+          <div class="value">2</div>
+        </div>
+        <div class="stat">
+          <div class="label">登入需求</div>
+          <div class="value">無</div>
+        </div>
+        <div class="stat">
+          <div class="label">敏感資料</div>
+          <div class="value">無</div>
+        </div>
+        <div class="stat">
+          <div class="label">執行權限</div>
+          <div class="value">User</div>
+        </div>
+        <div class="stat">
+          <div class="label">已修弱點</div>
+          <div class="value">6 / 9</div>
+        </div>
+        <div class="stat">
+          <div class="label">待辦弱點</div>
+          <div class="value">1 High</div>
+        </div>
+      </div>
+
+      <h3>1.4 主要結論</h3>
+      <p>
+        程式碼層面的安全性整體良好（使用 <code>System.Text.Json</code> 而非 Newtonsoft 的不安全反序列化、
+        所有檔案路徑錨定在使用者 LocalAppData、HttpClient 走 HTTPS 預設驗證、
+        無 SQL／無反射注入點、無寫死密碼）。本次審查共識別出 9 項問題，
+        其中 <strong>6 項已在程式碼／CI 層完成修補</strong>，剩餘 1 項屬於發行階段（MSI codesigning），
+        須公司 IT 提供代碼簽章憑證後才能納入 CI 流程；其餘 2 項為持續監控的 Info 等級項目。
+      </p>
+    </section>
+
+    <!-- ================== 2. 技術選型 ================== -->
+    <section class="card" id="sec-tech">
+      <h2><span class="num">02</span> 技術選型</h2>
+
+      <h3>2.1 執行環境</h3>
+      <table>
+        <tr><th>項目</th><th>規格</th></tr>
+        <tr><td>目標作業系統</td><td>Windows 10 / 11（x64）</td></tr>
+        <tr><td>執行環境</td><td>.NET 8 Desktop Runtime（self-contained MSI 內含，使用者免安裝）</td></tr>
+        <tr><td>UI 框架</td><td>WPF（XAML + MVVM）</td></tr>
+        <tr><td>建置工具鏈</td><td>.NET SDK 8.0、WiX Toolset 5.0.2、PowerShell 5.1+</td></tr>
+        <tr><td>CI／CD</td><td>GitHub Actions（windows-latest runner）</td></tr>
+      </table>
+
+      <h3>2.2 套件清單（PackageReference）</h3>
+      <table>
+        <tr><th>套件</th><th>版本</th><th>用途</th><th>授權</th></tr>
+        <tr><td><code>CommunityToolkit.Mvvm</code></td><td>8.3.2</td><td>MVVM 源產生器（ObservableProperty / RelayCommand）</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.Hosting</code></td><td>8.0.1</td><td>桌面 app 的 IHost + DI</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.Http</code></td><td>8.0.1</td><td>HttpClientFactory（爬蟲）</td><td>MIT</td></tr>
+        <tr><td><code>Microsoft.Extensions.DependencyInjection.Abstractions</code></td><td>8.0.2</td><td>DI 抽象</td><td>MIT</td></tr>
+        <tr><td><code>AngleSharp</code></td><td>1.1.2</td><td>HTML5 解析（DOM API）</td><td>MIT</td></tr>
+        <tr><td><code>Polly</code></td><td>8.4.2</td><td>網路重試／指數退避</td><td>BSD-3</td></tr>
+        <tr><td><code>ClosedXML</code></td><td>0.104.2</td><td>Excel（.xlsx）匯出</td><td>MIT</td></tr>
+        <tr><td><code>System.Drawing.Common</code></td><td>8.0.10</td><td>系統托盤圖示</td><td>MIT</td></tr>
+        <tr><td><code>xUnit / FluentAssertions / Moq</code></td><td>—</td><td>單元測試</td><td>MIT / Apache</td></tr>
+      </table>
+
+      <p>
+        所有套件皆為 .NET 8 對應的近期版本，<strong>截至報告日無已知 critical CVE</strong>。
+        <code>System.Drawing.Common</code> 8.0+ 已脫離 CVE-2023-31056 的影響範圍。
+      </p>
+
+      <div class="callout warn">
+        <strong>注意：</strong>.NET 8 的官方支援期至 <strong>2026-11</strong> 結束。若公司資安政策禁用
+        EOL runtime，最遲應於 2026 年第 4 季前完成升級至 .NET 10 LTS（或評估 .NET 9）。
+      </div>
+    </section>
+
+    <!-- ================== 3. 設計架構 ================== -->
+    <section class="card" id="sec-arch">
+      <h2><span class="num">03</span> 設計架構</h2>
+
+      <h3>3.1 模組分層</h3>
+      <p>專案採典型的 Clean Architecture 分層，下層不依賴上層：</p>
+
+      <table>
+        <tr><th>專案</th><th>類型</th><th>主要職責</th></tr>
+        <tr><td><code>Tender.Core</code></td><td>類別庫</td><td>領域模型、純邏輯（搜尋、關鍵字命中、民國年轉換、IClock 介面）。無 I/O 與框架相依。</td></tr>
+        <tr><td><code>Tender.Storage</code></td><td>類別庫</td><td>Repository 模式包裝 JSON 檔案讀寫；原子寫入（先 .tmp 再 rename）。</td></tr>
+        <tr><td><code>Tender.Crawler</code></td><td>Console exe</td><td>單次執行的爬蟲；以子程序方式從 Desktop 或 Task Scheduler 觸發。</td></tr>
+        <tr><td><code>Tender.Desktop</code></td><td>WPF exe</td><td>桌面 UI 與使用者互動，View / ViewModel / Service 三層。</td></tr>
+        <tr><td><code>Tender.Installer</code></td><td>WiX wixproj</td><td>產生 MSI 安裝包。</td></tr>
+      </table>
+
+      <h3>3.2 架構圖</h3>
+      <div class="ascii-diagram">                       +-----------------------------+
+                       |  Windows Task Scheduler     |
+                       |  TenderSearch.DailyCrawl    |
+                       |  (使用者層級, /RL LIMITED)  |
+                       +--------------+--------------+
+                                      | 17:00 daily
+                                      v
+   +-------------------+      +---------------------+      +-----------------------+
+   |  使用者雙擊捷徑    |----->|  Tender.Desktop.exe |----->|  Tender.Crawler.exe   |
+   +-------------------+      |  (WPF + IHost + DI) |  spawn (subprocess)         |
+                              |                     |      |                       |
+                              |  ShellViewModel     |      |  HttpClientCrawler    |
+                              |  MonthlyCalendarVm  |<-----|  AngleSharpParser     |
+                              |  DailyQueryVm       | JSONL (stdout progress)     |
+                              |  AppSettingsVm      |      |  CrawlerOrchestrator  |
+                              +----------+----------+      +-----+-----------+-----+
+                                         |                       |           |
+                                         | Read/Write             | Read/Write |
+                                         v                       v           v
+                              +--------------------------------------------------+
+                              |  %LocalAppData%\TenderSearch\data\               |
+                              |  +- YYYY-MM\YYYY-MM-DD\                          |
+                              |  |    +- tenders.json   (當日標案完整資料)       |
+                              |  |    +- summary.json   (當日摘要)              |
+                              |  |    +- crawl-runs.json (執行紀錄)             |
+                              |  |    +- errors.log     (JSON Lines 錯誤日誌)   |
+                              |  +- settings\                                    |
+                              |  |    +- keywords.json     (關鍵字)             |
+                              |  |    +- user-marks.json   (收藏)               |
+                              |  |    +- app-settings.json (設定)               |
+                              |  |    +- saved-searches.json                    |
+                              |  +- locks\crawler.lock     (重複執行鎖)         |
+                              +--------------------------------------------------+
+
+                                         |                       |
+                                         | HTTPS                 | HTTPS
+                                         v                       v
+                              +--------------------+   +--------------------------+
+                              | api.github.com     |   | web.pcc.gov.tw           |
+                              | (檢查更新, 啟動 1次)|   | (爬取標案, 每日 1 次)    |
+                              +--------------------+   +--------------------------+</div>
+
+      <h3>3.3 進程隔離</h3>
+      <p>
+        桌面 app 與爬蟲是<strong>兩個獨立進程</strong>，透過 stdout 的 JSON Lines 溝通進度。
+        這個設計有兩個資安好處：
+      </p>
+      <ul>
+        <li>
+          <strong>排程與互動觸發共用同一支執行檔</strong>：Task Scheduler 與「立即更新」按鈕
+          都是呼叫 <code>Tender.Crawler.exe --mode {scheduled|manual|catchup}</code>，行為一致、易於審查。
+        </li>
+        <li>
+          <strong>Crawler 崩潰不會帶倒桌面 app</strong>：子程序非預期結束時，桌面 app 透過
+          <code>ExitCode</code> 與 stderr 判讀錯誤，並寫入 <code>errors.log</code>。
+        </li>
+      </ul>
+
+      <h3>3.4 重要資料流</h3>
+      <ol>
+        <li>每日 17:00 Task Scheduler 觸發 <code>Tender.Crawler.exe --mode scheduled</code>。</li>
+        <li>Crawler 取得 lock（<code>locks\crawler.lock</code>），避免重複執行。</li>
+        <li>對 <code>web.pcc.gov.tw</code> 三種招標方式各發 GET（pageSize=2000，禮貌延遲 1.5 秒）。</li>
+        <li>AngleSharp 解析 HTML &lt;table id="tpam"&gt;，套用使用者關鍵字命中、寫入 <code>tenders.json</code>。</li>
+        <li>產生 <code>summary.json</code> 與 <code>crawl-runs.json</code>，釋放 lock，正常結束（exit code 0）。</li>
+        <li>桌面 app 啟動時讀 <code>summary.json</code> 顯示行事曆；使用者點某天才會 lazy-load 該日 <code>tenders.json</code>。</li>
+      </ol>
+
+      <h3>3.5 自動更新機制</h3>
+      <ul>
+        <li>桌面 app 啟動時非同步呼叫 <code>https://api.github.com/repos/firejeff01/tender/releases/latest</code>。</li>
+        <li>解析 tag 比對本機 assembly 版本；若有新版，工具列下方顯示 banner。</li>
+        <li>使用者主動點 banner 才會在預設瀏覽器開啟 release page，<strong>不會自動下載、不會自動安裝</strong>。</li>
+      </ul>
+    </section>
+
+    <!-- ================== 4. 資安設計 ================== -->
+    <section class="card" id="sec-security">
+      <h2><span class="num">04</span> 資安設計</h2>
+
+      <h3>4.1 權限模型</h3>
+      <table>
+        <tr><th>動作</th><th>需要權限</th><th>備註</th></tr>
+        <tr><td>安裝 MSI</td><td>本機 Administrator</td><td>寫入 <code>C:\Program Files\TenderSearch\</code></td></tr>
+        <tr><td>桌面 app 執行</td><td>一般使用者</td><td>不要求 admin；不寫 HKLM；不存取其他使用者的設定檔</td></tr>
+        <tr><td>排程任務執行</td><td>使用者層級（<code>/RL LIMITED</code>）</td><td>由桌面 app 首次啟動時建立，不需 admin</td></tr>
+        <tr><td>爬蟲子程序</td><td>承襲呼叫者身份</td><td>無提權；無 UAC prompt</td></tr>
+      </table>
+
+      <h3>4.2 網路安全</h3>
+      <ul>
+        <li><strong>白名單外連</strong>：僅 <code>web.pcc.gov.tw</code>（TLS 1.2+）、<code>api.github.com</code>（TLS 1.2+）。</li>
+        <li><strong>憑證驗證</strong>：HttpClient 預設啟用 TLS 證書驗證，無自訂回呼跳過驗證。</li>
+        <li><strong>Timeout</strong>：爬蟲 30 秒、更新檢查 10 秒，避免 hang。</li>
+        <li><strong>無 telemetry</strong>：不上傳任何使用資料、紀錄、追蹤識別碼。</li>
+        <li><strong>無接收連線</strong>：不開 listening socket、不需防火牆例外。</li>
+      </ul>
+
+      <h3>4.3 資料安全</h3>
+      <ul>
+        <li>所有資料儲存於使用者 <code>%LocalAppData%\TenderSearch\</code>，受 NTFS 使用者層級 ACL 保護。</li>
+        <li>不存任何密碼、token、API key 或個資。</li>
+        <li>不寫 Windows Registry HKLM；HKCU 僅由 MSI 寫入捷徑識別 key（非敏感）。</li>
+        <li>不需要也不要求網路共享（SMB／UNC）寫入。</li>
+        <li>JSON 寫入使用「先寫 .tmp 再 rename」原子操作，避免中斷產生殘破檔案。</li>
+      </ul>
+
+      <h3>4.4 反序列化與輸入驗證</h3>
+      <ul>
+        <li>所有 JSON 處理使用 <code>System.Text.Json</code>，<strong>未啟用</strong>多型反序列化（無 <code>TypeNameHandling</code>、無 <code>JsonPolymorphic</code>）。</li>
+        <li>無 <code>BinaryFormatter</code>、無 <code>XmlSerializer</code> 直接吃使用者輸入的情境。</li>
+        <li>HTML 解析以 AngleSharp HTML5 parser 處理，<strong>不解析 DTD</strong>，無 XXE 風險。</li>
+        <li>使用者輸入（關鍵字、設定）僅作為文字搜尋與設定儲存，未進入任何 SQL／Shell／反射執行路徑。</li>
+      </ul>
+
+      <h3>4.5 命令執行與子程序</h3>
+      <ul>
+        <li>啟動爬蟲：<code>ProcessStartInfo</code> 結構化參數，<code>UseShellExecute=false</code>，引數來自 <code>enum</code> 與 <code>DateOnly</code>，無拼接字串注入空間。</li>
+        <li>建立排程：呼叫 <code>schtasks.exe</code>，所有變數（<code>scheduledTime</code> 經 regex 驗證、<code>crawlerExe</code> 來自檔案系統查找）都不是使用者直接輸入。</li>
+        <li>瀏覽器啟動：URL 經過 scheme 白名單（<code>http</code>／<code>https</code> only），阻擋 <code>file://</code>、<code>javascript:</code>、UNC 等被 ShellExecute 誤觸發。</li>
+      </ul>
+
+      <h3>4.6 供應鏈安全</h3>
+      <ul>
+        <li>MSI 透過 GitHub Actions 自動建置；建置流程公開於 <code>.github/workflows/release.yml</code>。</li>
+        <li>套件來源限定 NuGet 官方 feed；無私有 feed、無 git 直接拉取。</li>
+        <li><strong>待補</strong>：MSI 數位簽章、SHA256 校驗、Dependabot 自動掃描（詳見第 7 節）。</li>
+      </ul>
+    </section>
+
+    <!-- ================== 5. 弱點掃描結果 ================== -->
+    <section class="card" id="sec-scan">
+      <h2><span class="num">05</span> 弱點掃描結果</h2>
+
+      <h3>5.1 掃描方法</h3>
+      <ul>
+        <li><strong>方法</strong>：靜態程式碼審查（SAST），人工 + grep 模式檢視全部 src/ 檔案。</li>
+        <li><strong>檢查清單</strong>：OWASP Top 10、CWE Top 25 桌面類別、CSV/Excel injection、URL handler abuse、命令注入、不安全反序列化、TLS 設定、權限提升、供應鏈完整性。</li>
+        <li><strong>未做</strong>：動態 fuzz、滲透測試、二進位檔案逆向。</li>
+      </ul>
+
+      <h3>5.2 嚴重度分布與修補狀態</h3>
+      <table>
+        <tr>
+          <th>嚴重度</th><th class="center">總數</th><th class="center">已修</th><th class="center">待辦</th><th>說明</th>
+        </tr>
+        <tr>
+          <td><span class="badge sev-critical">Critical</span></td>
+          <td class="center">0</td><td class="center">—</td><td class="center">—</td>
+          <td>無立即可被遠端利用之高風險弱點</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-high">High</span></td>
+          <td class="center">2</td><td class="center">1</td><td class="center">1</td>
+          <td>排程任務 SYSTEM 已修；MSI 簽章待 IT 憑證</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-medium">Medium</span></td>
+          <td class="center">2</td><td class="center">2</td><td class="center">0</td>
+          <td>Excel 公式注入、SHA256 完整性驗證皆已修</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-low">Low</span></td>
+          <td class="center">3</td><td class="center">3</td><td class="center">0</td>
+          <td>URL 白名單、套件 audit、redirect 白名單皆已修</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-info">Info</span></td>
+          <td class="center">2</td><td class="center">1</td><td class="center">1</td>
+          <td>已加更新檢查 toggle；套件版本監控持續進行</td>
+        </tr>
+      </table>
+
+      <h3>5.3 詳細發現</h3>
+
+      <!-- F-001 -->
+      <div class="finding pending">
+        <div class="finding-head">
+          <span class="id">F-001</span>
+          <h3>MSI 未數位簽章</h3>
+          <span class="badge sev-high">High</span>
+          <span class="badge status-pending">Pending</span>
+        </div>
+        <div class="meta-row">
+          類別：供應鏈安全 ／ 位置：<code>.github/workflows/release.yml</code>、<code>build/build-msi.ps1</code>
+        </div>
+        <p>
+          建置流程沒有任何 <code>signtool</code> 或 Authenticode 步驟，產出的 MSI 與內含的兩支 EXE
+          均未簽章。Windows SmartScreen 將顯示「Unknown publisher」警告，
+          公司端 AppLocker／WDAC（Windows Defender Application Control）可能直接拒絕安裝。
+        </p>
+        <p><strong>建議：</strong>取得公司代碼簽章憑證後，在 CI 對 EXE 與 MSI 加 SHA-256 Authenticode 簽章。</p>
+      </div>
+
+      <!-- F-002 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-002</span>
+          <h3>排程任務以 SYSTEM 身份執行</h3>
+          <span class="badge sev-high">High</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：權限提升 ／ 位置（修補前）：<code>src/Tender.Installer/Product.wxs</code>
+        </div>
+        <p>
+          原本 MSI 以 <code>Impersonate="no"</code>（SYSTEM）呼叫 <code>schtasks /Create</code>，
+          且未指定 <code>/RU</code>，導致建立的排程任務也以 SYSTEM 執行；
+          其 <code>%LocalAppData%</code> 解析至 <code>systemprofile</code>，桌面 app 完全看不到資料。
+        </p>
+        <p><strong>修補：</strong>移除 MSI Custom Action，改由桌面 app 首次啟動時建立使用者層級任務（<code>/RL LIMITED</code>）。</p>
+      </div>
+
+      <!-- F-003 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-003</span>
+          <h3>自動更新無檔案完整性驗證</h3>
+          <span class="badge sev-medium">Medium</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：供應鏈安全 ／ 位置：<code>.github/workflows/release.yml</code>
+        </div>
+        <p>
+          更新流程僅將使用者導向 GitHub Release 頁面下載，無 SHA256 比對、無簽章驗證。
+          若 GitHub Release 被篡改或維護者帳號被盜，使用者下載端無防禦。
+        </p>
+        <p>
+          <strong>修補：</strong>CI 在產 MSI 後自動以 <code>Get-FileHash</code> 計算 SHA256 並產出
+          <code>TenderSearch.msi.sha256</code>，隨 GitHub Release 一併公布。使用者下載後可自行
+          以 <code>Get-FileHash</code> 比對。最終的 Authenticode 簽章驗證仍需與 F-001 一併完成。
+        </p>
+      </div>
+
+      <!-- F-004 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-004</span>
+          <h3>Excel 匯出未防 Formula Injection</h3>
+          <span class="badge sev-medium">Medium</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：注入攻擊 ／ 位置：<code>src/Tender.Desktop/Services/ClosedXmlExcelExporter.cs</code>
+        </div>
+        <p>
+          上游政府網站若出現以 <code>=</code>、<code>+</code>、<code>-</code>、<code>@</code> 開頭的字串
+          （如 <code>=HYPERLINK("https://evil","click")</code>），匯出的 Excel
+          被使用者按 F2＋Enter 重新編輯時，可能被 Excel 解讀為公式並觸發。
+        </p>
+        <p><strong>修補：</strong>加入 <code>SanitizeForExcel()</code>，對所有自由文字欄位前置單引號（OWASP 建議）。</p>
+      </div>
+
+      <!-- F-005 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-005</span>
+          <h3>瀏覽器啟動未限制 URL scheme</h3>
+          <span class="badge sev-low">Low–Medium</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：URL handler abuse ／ 位置：<code>src/Tender.Desktop/Services/ProcessStartBrowserLauncher.cs</code>、
+          <code>src/Tender.Crawler/Parsing/AngleSharpTenderParser.cs</code>
+        </div>
+        <p>
+          原本 <code>Process.Start(url) UseShellExecute=true</code> 未限制 scheme；
+          理論上若上游 HTML href 為 <code>file://</code>、<code>javascript:</code>、UNC 路徑等，
+          會交給 OS 預設 handler 執行。
+        </p>
+        <p><strong>修補：</strong>兩處皆加 scheme 白名單（<code>http</code>／<code>https</code> only），其他 scheme 直接忽略。</p>
+      </div>
+
+      <!-- F-006 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-006</span>
+          <h3>未自動掃描套件漏洞</h3>
+          <span class="badge sev-low">Low</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：供應鏈監控 ／ 位置：<code>.github/workflows/release.yml</code>、
+          <code>.github/workflows/ci.yml</code>、<code>.github/dependabot.yml</code>
+        </div>
+        <p>
+          CI 流程未跑 <code>dotnet list package --vulnerable --include-transitive</code>，
+          GitHub repo 未啟用 Dependabot security updates。
+        </p>
+        <p>
+          <strong>修補：</strong>release.yml 與 ci.yml 都加入 audit step，build 時若偵測到漏洞會 print warning；
+          並新增 <code>.github/dependabot.yml</code> 每週一 09:00 (Asia/Taipei) 自動掃描 NuGet 與 GitHub Actions 套件、開 PR。
+        </p>
+      </div>
+
+      <!-- F-007 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-007</span>
+          <h3>HttpClient AllowAutoRedirect=true 未設目的地白名單</h3>
+          <span class="badge sev-low">Low</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：防禦深度 ／ 位置：<code>src/Tender.Crawler/Program.cs</code>、
+          <code>src/Tender.Crawler/Spider/WhitelistedRedirectHandler.cs</code>（新）、
+          <code>src/Tender.Desktop/Services/GitHubUpdateChecker.cs</code>
+        </div>
+        <p>
+          HttpClient 採預設 <code>AllowAutoRedirect=true</code>。實務上 gov 網站若被 302 導向他處，
+          會自動跟進。由於回應 HTML 只交給 AngleSharp 解析（無 ShellExecute），實際影響有限。
+        </p>
+        <p>
+          <strong>修補：</strong>新增 <code>WhitelistedRedirectHandler</code>（DelegatingHandler）；
+          Crawler 將 <code>AllowAutoRedirect</code> 設為 <code>false</code>，
+          僅當 Location header 指向 <code>web.pcc.gov.tw</code> 才跟進。
+          GitHubUpdateChecker 直接停用自動 redirect（GitHub API 不應有 3xx 正常回應）。
+        </p>
+      </div>
+
+      <!-- F-008 -->
+      <div class="finding fixed">
+        <div class="finding-head">
+          <span class="id">F-008</span>
+          <h3>啟動時呼叫 GitHub API 之連線洩露</h3>
+          <span class="badge sev-info">Info</span>
+          <span class="badge status-fixed">已修</span>
+        </div>
+        <div class="meta-row">
+          類別：隱私／合規 ／ 位置：<code>src/Tender.Core/Models/AppSettings.cs</code>、
+          <code>src/Tender.Desktop/ViewModels/AppSettingsViewModel.cs</code>、
+          <code>src/Tender.Desktop/ViewModels/ShellViewModel.cs</code>
+        </div>
+        <p>
+          每次桌面 app 啟動會發 GET 到 <code>api.github.com</code>。GitHub 端會看到使用者公司 IP
+          與啟動時間。對部分公司資安政策需登錄為「外連連線清單」之一。
+        </p>
+        <p>
+          <strong>修補：</strong>AppSettings 新增 <code>UpdateCheckEnabled</code>（預設 true）；
+          設定頁加 checkbox 讓使用者關閉。當設定為 false 時，
+          ShellViewModel 在發送 API 前直接 short-circuit，<strong>完全不發生外連</strong>。
+        </p>
+      </div>
+
+      <!-- F-009 -->
+      <div class="finding pending">
+        <div class="finding-head">
+          <span class="id">F-009</span>
+          <h3>NuGet 套件版本監控</h3>
+          <span class="badge sev-info">Info</span>
+          <span class="badge status-na">持續監控</span>
+        </div>
+        <div class="meta-row">
+          類別：套件治理
+        </div>
+        <p>
+          目前所有套件無已知 critical CVE，但 .NET 8 將於 2026-11 結束 LTS；
+          需於 EOL 前完成 runtime 升級。
+        </p>
+        <p><strong>建議：</strong>每季執行一次 <code>dotnet list package --outdated --vulnerable</code>。</p>
+      </div>
+
+    </section>
+
+    <!-- ================== 6. 修補執行紀錄 ================== -->
+    <section class="card" id="sec-remediation">
+      <h2><span class="num">06</span> 修補執行紀錄</h2>
+
+      <h3>6.1 已完成修補（7 項）</h3>
+
+      <table>
+        <tr><th>編號</th><th>項目</th><th>修補方式</th><th>影響檔案</th></tr>
+        <tr>
+          <td>F-002</td>
+          <td>排程改 user-level</td>
+          <td>移除 MSI Custom Action（避免 SYSTEM 執行 schtasks）；新增 <code>ScheduledTaskInstaller</code> service，桌面 app 啟動自動建立 user-level task（含 <code>/RL LIMITED</code>）；AppSettingsViewModel 改用 service。</td>
+          <td><code>Product.wxs</code>、<code>App.xaml.cs</code>、<code>ScheduledTaskInstaller.cs</code>（新）、<code>AppSettingsViewModel.cs</code></td>
+        </tr>
+        <tr>
+          <td>F-003</td>
+          <td>SHA256 完整性檔案</td>
+          <td>release.yml 加 <code>Get-FileHash</code> 步驟產生 <code>.sha256</code> 檔，與 MSI 同時上傳 GitHub Release。</td>
+          <td><code>.github/workflows/release.yml</code></td>
+        </tr>
+        <tr>
+          <td>F-004</td>
+          <td>Excel 公式注入清洗</td>
+          <td>新增 <code>SanitizeForExcel()</code>，對 8 個自由文字欄位前置單引號。</td>
+          <td><code>ClosedXmlExcelExporter.cs</code></td>
+        </tr>
+        <tr>
+          <td>F-005</td>
+          <td>URL scheme 白名單</td>
+          <td>桌面 <code>ProcessStartBrowserLauncher.Open()</code> 與爬蟲 <code>NormalizeUrl()</code> 雙端加 http/https 白名單。</td>
+          <td><code>ProcessStartBrowserLauncher.cs</code>、<code>AngleSharpTenderParser.cs</code></td>
+        </tr>
+        <tr>
+          <td>F-006</td>
+          <td>套件漏洞 audit + Dependabot</td>
+          <td>release.yml 與 ci.yml 加 <code>dotnet list package --vulnerable</code>；新增 <code>.github/dependabot.yml</code> 每週掃描 NuGet + GitHub Actions。</td>
+          <td><code>.github/workflows/release.yml</code>、<code>ci.yml</code>、<code>.github/dependabot.yml</code>（新）</td>
+        </tr>
+        <tr>
+          <td>F-007</td>
+          <td>Redirect 白名單</td>
+          <td>新增 <code>WhitelistedRedirectHandler</code>（DelegatingHandler）；Crawler 改 AllowAutoRedirect=false 後僅跟進 web.pcc.gov.tw；GitHubUpdateChecker 直接停用 redirect。</td>
+          <td><code>WhitelistedRedirectHandler.cs</code>（新）、<code>Tender.Crawler/Program.cs</code>、<code>GitHubUpdateChecker.cs</code></td>
+        </tr>
+        <tr>
+          <td>F-008</td>
+          <td>停用更新檢查 toggle</td>
+          <td>AppSettings 加 <code>UpdateCheckEnabled</code>；設定頁加 checkbox；ShellViewModel 啟動前判斷，關閉時完全不發外連。</td>
+          <td><code>AppSettings.cs</code>、<code>AppSettingsViewModel.cs</code>、<code>AppSettingsWindow.xaml</code>、<code>ShellViewModel.cs</code></td>
+        </tr>
+      </table>
+
+      <h3>6.2 修補後驗證</h3>
+      <table>
+        <tr><th>驗證項目</th><th>結果</th></tr>
+        <tr><td><code>dotnet build Tender.slnx</code></td><td>0 errors / 0 warnings</td></tr>
+        <tr><td>Tender.Core.Tests（單元測試）</td><td>78 / 78 通過</td></tr>
+        <tr><td>Tender.Crawler.Tests（單元測試）</td><td>58 / 58 通過</td></tr>
+        <tr><td>Tender.Storage.Tests（單元測試）</td><td>24 / 24 通過</td></tr>
+        <tr><td>WiX MSI build</td><td>產出 <code>TenderSearch.msi</code> 成功</td></tr>
+      </table>
+
+      <p>
+        所有修補皆於本機 Windows 11 環境通過 build 與 unit test 全綠，
+        並於 GitHub Actions（windows-latest）pipeline 上配置 audit、SHA256 與套件監控自動執行。
+      </p>
+    </section>
+
+    <!-- ================== 7. 待辦項目 ================== -->
+    <section class="card" id="sec-pending">
+      <h2><span class="num">07</span> 待辦項目（Outstanding Items）</h2>
+
+      <p>下列項目需公司 IT 或外部資源協助，不在程式碼層可獨立完成：</p>
+
+      <table>
+        <tr><th>優先序</th><th>項目</th><th>需求</th><th>預估時間</th></tr>
+        <tr>
+          <td><span class="badge sev-high">P1</span></td>
+          <td>F-001 取得代碼簽章憑證並接入 CI</td>
+          <td>OV／EV Code Signing 憑證、<code>signtool.exe</code></td>
+          <td>半天（流程接通後）</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-info">P2</span></td>
+          <td>F-009 排定季度套件 audit</td>
+          <td>納入維運清單；Dependabot 已自動處理週級監控</td>
+          <td>—</td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>建議：</strong>F-001 完成簽章後，本工具的供應鏈防護將形成完整鏈條：
+        Authenticode 簽章 + SHA256 完整性檔（已實作）+ Dependabot 套件監控（已實作）+ CI audit（已實作）。
+      </div>
+    </section>
+
+    <!-- ================== 8. 給 IT 部門資訊 ================== -->
+    <section class="card" id="sec-it">
+      <h2><span class="num">08</span> 給 IT 部門資訊（資安申請素材）</h2>
+
+      <h3>8.1 工具基本資訊</h3>
+      <table>
+        <tr><th>項目</th><th>內容</th></tr>
+        <tr><td>工具名稱</td><td>TenderSearch（政府電子採購網標案查詢）</td></tr>
+        <tr><td>來源</td><td>內部開發；source code 在公司 GitHub</td></tr>
+        <tr><td>用途</td><td>業務人員每日查閱政府公開招標資料</td></tr>
+        <tr><td>使用者規模</td><td>內部少量（個位數同仁）</td></tr>
+        <tr><td>安裝包形式</td><td>Windows MSI（self-contained，內含 .NET 8 Runtime）</td></tr>
+        <tr><td>安裝位置</td><td><code>C:\Program Files\TenderSearch\</code></td></tr>
+        <tr><td>資料儲存</td><td><code>%LocalAppData%\TenderSearch\</code>（純 JSON）</td></tr>
+        <tr><td>所需執行權限</td><td>一般使用者；安裝時需 admin（寫入 Program Files）</td></tr>
+      </table>
+
+      <h3>8.2 外連端點白名單</h3>
+      <table>
+        <tr><th>網域</th><th>協定</th><th>頻率</th><th>用途</th></tr>
+        <tr>
+          <td><code>web.pcc.gov.tw</code></td>
+          <td>HTTPS (TLS 1.2+)</td>
+          <td>每日 1 次（17:00，可由使用者調整）</td>
+          <td>抓取當日招標公告 HTML</td>
+        </tr>
+        <tr>
+          <td><code>api.github.com</code></td>
+          <td>HTTPS (TLS 1.2+)</td>
+          <td>桌面 app 啟動時 1 次</td>
+          <td>檢查是否有新版本（不自動下載）</td>
+        </tr>
+      </table>
+
+      <h3>8.3 執行檔指紋</h3>
+      <p>建議於部署前比對下列檔案 SHA256：</p>
+      <ul>
+        <li><code>C:\Program Files\TenderSearch\desktop\Tender.Desktop.exe</code></li>
+        <li><code>C:\Program Files\TenderSearch\crawler\Tender.Crawler.exe</code></li>
+        <li><code>dist\TenderSearch.msi</code>（安裝包）</li>
+      </ul>
+      <p>取得 SHA256 指令：</p>
+      <pre><code>Get-FileHash -Algorithm SHA256 dist\TenderSearch.msi</code></pre>
+
+      <h3>8.4 不會做的事</h3>
+      <ul>
+        <li>不存取網路共享（SMB／UNC）。</li>
+        <li>不開 listening socket、不需防火牆 inbound 規則。</li>
+        <li>不寫 HKLM；不讀寫其他使用者的 profile。</li>
+        <li>不收集使用者個資、密碼、瀏覽紀錄。</li>
+        <li>不上傳任何 telemetry。</li>
+        <li>不執行下載的程式碼；自動更新只通知，不自動安裝。</li>
+      </ul>
+    </section>
+
+    <!-- ================== 9. 附錄 ================== -->
+    <section class="card" id="sec-appendix">
+      <h2><span class="num">09</span> 附錄</h2>
+
+      <h3>A. 專案檔案清單</h3>
+      <pre><code>tender/
+├── src/
+│   ├── Tender.Core/             領域邏輯（無 I/O）
+│   ├── Tender.Storage/          JSON 持久化
+│   ├── Tender.Crawler/          爬蟲 console exe
+│   ├── Tender.Desktop/          WPF 桌面 app
+│   └── Tender.Installer/        WiX MSI
+├── tests/
+│   ├── Tender.Core.Tests/       78 tests
+│   ├── Tender.Crawler.Tests/    58 tests
+│   ├── Tender.Storage.Tests/    24 tests
+│   └── Tender.AcceptanceTests/  Reqnroll scaffold（dev-phase 預留）
+├── build/
+│   ├── build-msi.ps1            Publish + WiX 整合腳本
+│   └── convert-icon.ps1         PNG → ICO
+├── docs/
+│   └── internal-report.html     本報告
+├── pm/                          需求／Event Storming
+├── sa/                          架構文件／介面契約
+└── .github/workflows/           CI/CD
+</code></pre>
+
+      <h3>B. 建置與部署</h3>
+      <pre><code># 重新建置整個 solution
+dotnet build Tender.slnx
+
+# 跑全部單元測試（160 個）
+dotnet test tests/Tender.Core.Tests/Tender.Core.Tests.csproj --no-build
+dotnet test tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj --no-build
+dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
+
+# 建置 self-contained MSI（含 .NET 8 runtime, ~80MB）
+.\build\build-msi.ps1
+
+# 建置 framework-dependent slim MSI（~5MB，需先裝 .NET 8 Desktop Runtime）
+.\build\build-msi.ps1 -Slim
+</code></pre>
+
+      <h3>C. 名詞對照</h3>
+      <table>
+        <tr><th>縮寫／術語</th><th>說明</th></tr>
+        <tr><td>SAST</td><td>Static Application Security Testing — 靜態程式碼安全分析</td></tr>
+        <tr><td>SBOM</td><td>Software Bill of Materials — 軟體物料清單</td></tr>
+        <tr><td>CVE</td><td>Common Vulnerabilities and Exposures — 通用弱點識別碼</td></tr>
+        <tr><td>OWASP</td><td>Open Web Application Security Project — 開放式 Web 應用程式安全計畫</td></tr>
+        <tr><td>Authenticode</td><td>Microsoft 數位簽章機制（用於 EXE／MSI 簽章）</td></tr>
+        <tr><td>AppLocker / WDAC</td><td>Windows 應用程式白名單機制</td></tr>
+        <tr><td>SmartScreen</td><td>Windows 內建未知發行者偵測機制</td></tr>
+        <tr><td>EOL</td><td>End of Life — 軟體支援終止</td></tr>
+        <tr><td>LTS</td><td>Long Term Support — 長期支援版本</td></tr>
+      </table>
+
+    </section>
+
+    <footer class="report-footer">
+      本報告為 TenderSearch 專案內部技術文件 — 版本 1.1 / 2026-05-10
+    </footer>
+
+  </main>
+
+</div>
+
+</body>
+</html>

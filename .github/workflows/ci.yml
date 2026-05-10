@@ -25,5 +25,16 @@ jobs:
       - name: Restore
         run: dotnet restore Tender.slnx
 
+      - name: Audit packages for known vulnerabilities
+        shell: pwsh
+        run: |
+          $output = dotnet list Tender.slnx package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $output
+          if ($output -match 'has the following vulnerable packages') {
+            Write-Warning 'Vulnerable packages detected; review the audit output above.'
+          } else {
+            Write-Host 'No known vulnerable packages found.'
+          }
+
       - name: Build
         run: dotnet build Tender.slnx --no-restore -c Release --nologo

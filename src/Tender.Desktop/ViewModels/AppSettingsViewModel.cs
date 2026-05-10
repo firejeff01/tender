@@ -20,6 +20,9 @@ public partial class AppSettingsViewModel : ObservableObject
     private bool _catchupEnabled = true;
 
     [ObservableProperty]
+    private bool _updateCheckEnabled = true;
+
+    [ObservableProperty]
     private int _requestDelayMs = 1500;
 
     [ObservableProperty]
@@ -61,6 +64,7 @@ public partial class AppSettingsViewModel : ObservableObject
             var s = await _repo.LoadAsync(ct);
             ScheduledTime = s.ScheduledTime;
             CatchupEnabled = s.CatchupEnabled;
+            UpdateCheckEnabled = s.UpdateCheckEnabled;
             RequestDelayMs = s.RequestDelayMs;
             MaxRetries = s.MaxRetries;
             DataRetentionMonths = s.DataRetentionMonths;
@@ -112,6 +116,7 @@ public partial class AppSettingsViewModel : ObservableObject
             {
                 ScheduledTime = ScheduledTime,
                 CatchupEnabled = CatchupEnabled,
+                UpdateCheckEnabled = UpdateCheckEnabled,
                 RequestDelayMs = RequestDelayMs,
                 MaxRetries = MaxRetries,
                 DataRetentionMonths = DataRetentionMonths,
@@ -134,6 +139,7 @@ public partial class AppSettingsViewModel : ObservableObject
 
     partial void OnScheduledTimeChanged(string value) { HasUnsavedChanges = true; }
     partial void OnCatchupEnabledChanged(bool value) { HasUnsavedChanges = true; }
+    partial void OnUpdateCheckEnabledChanged(bool value) { HasUnsavedChanges = true; }
     partial void OnRequestDelayMsChanged(int value) { HasUnsavedChanges = true; }
     partial void OnMaxRetriesChanged(int value) { HasUnsavedChanges = true; }
     partial void OnDataRetentionMonthsChanged(int value) { HasUnsavedChanges = true; }

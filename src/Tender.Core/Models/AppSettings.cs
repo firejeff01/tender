@@ -12,6 +12,13 @@ public sealed record AppSettings
     [JsonPropertyName("catchupEnabled")]
     public bool CatchupEnabled { get; init; } = true;
 
+    /// <summary>
+    /// 是否在啟動時呼叫 GitHub API 檢查更新。預設 true；
+    /// 公司資安若禁外連 api.github.com，可關閉以避免任何外連動作。
+    /// </summary>
+    [JsonPropertyName("updateCheckEnabled")]
+    public bool UpdateCheckEnabled { get; init; } = true;
+
     /// <summary>爬蟲分頁間隔毫秒數，遵守禮貌爬取。</summary>
     [JsonPropertyName("requestDelayMs")]
     public int RequestDelayMs { get; init; } = 1500;

@@ -21,7 +21,11 @@ public sealed class GitHubUpdateChecker : IUpdateChecker
 
         try
         {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            // AllowAutoRedirect=false：api.github.com/releases/latest 正常回應為 200 JSON，
+            // 若收到 3xx 視為非預期狀態（GetAsync 不會跟進）→ IsSuccessStatusCode 為 false
+            // → 直接落入「無更新」分支，避免被導向他站。
+            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
             client.DefaultRequestHeaders.Add("User-Agent", "TenderSearch-UpdateChecker");
             client.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
 

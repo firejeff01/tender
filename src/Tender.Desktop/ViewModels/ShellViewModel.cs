@@ -22,6 +22,7 @@ public partial class ShellViewModel : ObservableObject
     private readonly IBrowserLauncher _browser;
     private readonly IDataCleanupService _cleanupService;
     private readonly INotificationService _notifications;
+    private readonly IAppSettingsRepository _appSettingsRepo;
 
     public MonthlyCalendarViewModel CalendarVm { get; }
 
@@ -63,7 +64,8 @@ public partial class ShellViewModel : ObservableObject
         IUpdateChecker updateChecker,
         IBrowserLauncher browser,
         IDataCleanupService cleanupService,
-        INotificationService notifications)
+        INotificationService notifications,
+        IAppSettingsRepository appSettingsRepo)
     {
         CalendarVm = calendarVm;
         _dailyVmFactory = dailyVmFactory;
@@ -78,6 +80,7 @@ public partial class ShellViewModel : ObservableObject
         _browser = browser;
         _cleanupService = cleanupService;
         _notifications = notifications;
+        _appSettingsRepo = appSettingsRepo;
     }
 
     [RelayCommand]
@@ -147,6 +150,10 @@ public partial class ShellViewModel : ObservableObject
     {
         try
         {
+            // 使用者於設定頁可關閉；關閉後完全不發生外連 api.github.com
+            var settings = await _appSettingsRepo.LoadAsync(ct);
+            if (!settings.UpdateCheckEnabled) return;
+
             var info = await _updateChecker.CheckAsync(ct);
             UpdateInfo = info;
             IsUpdateAvailable = info.IsUpdateAvailable;

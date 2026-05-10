@@ -51,6 +51,19 @@ jobs:
       - name: Restore
         run: dotnet restore Tender.slnx
 
+      - name: Audit packages for known vulnerabilities
+        shell: pwsh
+        run: |
+          # 列出含已知漏洞的套件（含遞移依賴）。目前不阻斷 build，只記錄供日後檢視；
+          # 若想嚴格阻斷，把 $errored = $true 改成直接 throw。
+          $output = dotnet list Tender.slnx package --vulnerable --include-transitive 2>&1 | Out-String
+          Write-Host $output
+          if ($output -match 'has the following vulnerable packages') {
+            Write-Warning 'Vulnerable packages detected; review the audit output above.'
+          } else {
+            Write-Host 'No known vulnerable packages found.'
+          }
+
       - name: Run unit tests
         shell: pwsh
         run: |
@@ -69,10 +82,21 @@ jobs:
           $size = (Get-Item "dist\TenderSearch.msi").Length / 1MB
           Write-Host ("MSI size: {0:N1} MB" -f $size)
 
+      - name: Generate SHA256 checksum
+        shell: pwsh
+        run: |
+          # 產生 dist\TenderSearch.msi.sha256，格式為「<hash>  <filename>」相容
+          # PowerShell 的 Get-FileHash 與 sha256sum -c 兩種驗證方式
+          $hash = (Get-FileHash -Algorithm SHA256 dist\TenderSearch.msi).Hash.ToLowerInvariant()
+          "$hash  TenderSearch.msi" | Out-File -FilePath dist\TenderSearch.msi.sha256 -Encoding ascii -NoNewline
+          Write-Host "SHA256: $hash"
+
       - name: Create GitHub Release with MSI asset
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: ${{ steps.ver.outputs.tag }}
           generate_release_notes: true
-          files: dist/TenderSearch.msi
+          files: |
+            dist/TenderSearch.msi
+            dist/TenderSearch.msi.sha256
