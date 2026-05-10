@@ -54,11 +54,25 @@ jobs:
       - name: Audit packages for known vulnerabilities
         shell: pwsh
         run: |
-          # 列出含已知漏洞的套件（含遞移依賴）。目前不阻斷 build，只記錄供日後檢視；
-          # 若想嚴格阻斷，把 $errored = $true 改成直接 throw。
-          $output = dotnet list Tender.slnx package --vulnerable --include-transitive 2>&1 | Out-String
-          Write-Host $output
-          if ($output -match 'has the following vulnerable packages') {
+          # 列出含已知漏洞的 NuGet 套件（含遞移依賴）。
+          # 逐個 csproj 跑（不能用 Tender.slnx：slnx 會把 Tender.Installer.wixproj
+          # 拉進來，但 wixproj 不支援 dotnet list package，會讓整個 step exit 1）。
+          # 目前不阻斷 build，只 print warning；若想嚴格阻斷把 Write-Warning 改 throw。
+          $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj -File `
+            | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } `
+            | Select-Object -ExpandProperty FullName
+          $hasVuln = $false
+          foreach ($p in $projects) {
+            $rel = Resolve-Path -Relative $p
+            Write-Host "=== $rel ==="
+            $output = dotnet list $p package --vulnerable --include-transitive 2>&1 | Out-String
+            Write-Host $output
+            # 用 advisory URL 比對（locale-agnostic；en-US 與 zh-TW 輸出文字不同）
+            if ($output -match 'github\.com/advisories/') {
+              $hasVuln = $true
+            }
+          }
+          if ($hasVuln) {
             Write-Warning 'Vulnerable packages detected; review the audit output above.'
           } else {
             Write-Host 'No known vulnerable packages found.'

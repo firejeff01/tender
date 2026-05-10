@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    顯式覆寫測試 transitive 帶進來的舊版 NuGet shim：
+    System.Net.Http 4.3.0 與 System.Text.RegularExpressions 4.3.0 在 .NET 5+
+    為 type-forward 空殼，實際實作來自 runtime BCL，CVE 攻擊面僅適用於
+    .NET Framework，本專案 net8.0 無實際風險。升到 4.3.4 / 4.3.1（含 metadata
+    修補的版本）讓 audit 不再標 High。僅作用於 tests/ 下的所有測試專案。
+  -->
+  <ItemGroup>
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+  </ItemGroup>
+
+</Project>
