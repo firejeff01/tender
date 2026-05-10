@@ -40,7 +40,9 @@ public partial class MonthlyCalendarViewModel : ObservableObject
             FailedDaysCount = 0;
             return;
         }
-        DaysWithDataCount = value.Days.Count(d => d.Summary != null);
+        // 「有資料」= 爬蟲跑過 (Summary 非 null) 且實際抓到至少 1 筆。
+        // 0 筆即使爬蟲成功跑完也視同無資料（如假日或 gov 網站當日無公告）。
+        DaysWithDataCount = value.Days.Count(d => d.Summary != null && d.Summary.TotalCount > 0);
         FailedDaysCount = value.Days.Count(d => d.Summary?.LastRunStatus == RunStatus.Failed);
     }
 
