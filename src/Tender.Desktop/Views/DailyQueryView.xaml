@@ -478,7 +478,8 @@
                         <Setter Property="Background" Value="{StaticResource BgAccentBrush}" />
                         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
                         <Setter Property="FontWeight" Value="SemiBold" />
-                        <Setter Property="Padding" Value="8,7" />
+                        <Setter Property="Padding" Value="6,7" />
+                        <Setter Property="HorizontalContentAlignment" Value="Center" />
                         <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
                         <Setter Property="BorderThickness" Value="0,0,1,1" />
                     </Style>
@@ -498,7 +499,7 @@
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <!-- ★ 收藏 -->
-                    <DataGridTemplateColumn Header="★" Width="32" SortMemberPath="IsFavorite">
+                    <DataGridTemplateColumn Header="收藏" Width="60" MinWidth="60" SortMemberPath="IsFavorite">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsFavorite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -519,7 +520,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <!-- 已讀 -->
-                    <DataGridTemplateColumn Header="📬" Width="32" SortMemberPath="IsRead">
+                    <DataGridTemplateColumn Header="已讀" Width="60" MinWidth="60" SortMemberPath="IsRead">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsRead, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -540,7 +541,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <!-- 排除 -->
-                    <DataGridTemplateColumn Header="🚫" Width="32" SortMemberPath="IsExcluded">
+                    <DataGridTemplateColumn Header="排除" Width="60" MinWidth="60" SortMemberPath="IsExcluded">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsExcluded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
