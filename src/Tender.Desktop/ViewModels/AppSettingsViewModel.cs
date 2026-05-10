@@ -11,6 +11,7 @@ namespace Tender.Desktop.ViewModels;
 public partial class AppSettingsViewModel : ObservableObject
 {
     private readonly IAppSettingsRepository _repo;
+    private readonly IScheduledTaskInstaller _taskInstaller;
 
     [ObservableProperty]
     private string _scheduledTime = "17:00";
@@ -35,9 +36,10 @@ public partial class AppSettingsViewModel : ObservableObject
 
     public ObservableCollection<TenderMethodOption> TenderMethodOptions { get; } = new();
 
-    public AppSettingsViewModel(IAppSettingsRepository repo)
+    public AppSettingsViewModel(IAppSettingsRepository repo, IScheduledTaskInstaller taskInstaller)
     {
         _repo = repo;
+        _taskInstaller = taskInstaller;
         // 列出所有支援的招標方式（從 TenderMethodMapping 取出名稱）
         foreach (var name in TenderMethodMapping.BusinessNameToOptionValue.Keys)
         {
@@ -118,50 +120,15 @@ public partial class AppSettingsViewModel : ObservableObject
             await _repo.SaveAsync(s, ct);
             HasUnsavedChanges = false;
 
-            // 同步 Task Scheduler：不存在就建立、已存在就以新時間覆寫（/Create /F 同時涵蓋兩種情況）
-            var taskOk = TryCreateOrUpdateScheduledTask(ScheduledTime);
+            // 同步 Task Scheduler：以使用者層級覆寫
+            var taskOk = _taskInstaller.EnsureTask(ScheduledTime);
             StatusMessage = taskOk
                 ? $"儲存成功，每日排程已設定為 {ScheduledTime}"
-                : $"儲存成功，但建立排程失敗（可能找不到 Crawler 執行檔或權限不足）";
+                : $"儲存成功，但建立排程失敗（可能找不到 Crawler 執行檔）";
         }
         catch (Exception ex)
         {
             StatusMessage = $"儲存失敗：{ex.Message}";
-        }
-    }
-
-    /// <summary>
-    /// 用 schtasks /Create /F 建立或覆寫每日排程任務。
-    /// 屬於使用者層級任務（以目前登入帳號身份執行），不需 admin 權限。
-    /// </summary>
-    private static bool TryCreateOrUpdateScheduledTask(string hhmm)
-    {
-        var crawlerExe = CrawlerLauncher.FindCrawlerExe();
-        if (crawlerExe is null) return false;
-
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "schtasks.exe",
-                // /F = force overwrite，效果等於 create-or-update
-                Arguments =
-                    $"/Create /SC DAILY /TN \"TenderSearch.DailyCrawl\" " +
-                    $"/TR \"\\\"{crawlerExe}\\\" --mode scheduled\" " +
-                    $"/ST {hhmm} /F",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-            using var p = System.Diagnostics.Process.Start(psi);
-            if (p == null) return false;
-            p.WaitForExit(5000);
-            return p.ExitCode == 0;
-        }
-        catch
-        {
-            return false;
         }
     }
 

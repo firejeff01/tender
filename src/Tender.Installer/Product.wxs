@@ -86,19 +86,16 @@
                      Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
-    <!-- 自動建立每日 17:00 排程任務（透過 WixQuietExec64 + schtasks） -->
-    <SetProperty Id="CreateScheduledTask"
-                 Sequence="execute"
-                 Before="CreateScheduledTask"
-                 Value='&quot;[System64Folder]schtasks.exe&quot; /Create /SC DAILY /TN &quot;TenderSearch.DailyCrawl&quot; /TR &quot;\&quot;[CRAWLERFOLDER]Tender.Crawler.exe\&quot; --mode scheduled&quot; /ST 17:00 /F' />
+    <!--
+      排程任務由桌面 app 首次啟動時以「使用者層級」建立（見
+      Tender.Desktop/Services/ScheduledTaskInstaller.cs 與 App.OnStartup）。
+      不再透過 MSI Custom Action：deferred + Impersonate="no" 會以 SYSTEM
+      身份呼叫 schtasks，導致建立出來的 task 也以 SYSTEM 執行，且其
+      %LocalAppData% 解析到 systemprofile，桌面 app 看不到爬蟲存的資料。
 
-    <CustomAction Id="CreateScheduledTask"
-                  BinaryRef="Wix4UtilCA_X64"
-                  DllEntry="WixQuietExec64"
-                  Execute="deferred"
-                  Impersonate="no"
-                  Return="ignore" />
-
+      解除安裝時仍嘗試清理：以 SYSTEM 呼叫 schtasks /Delete 對任何身份
+      的 task 都有效（找不到時 Return="ignore" 也不會中斷解除安裝）。
+    -->
     <SetProperty Id="RemoveScheduledTask"
                  Sequence="execute"
                  Before="RemoveScheduledTask"
@@ -112,7 +109,6 @@
                   Return="ignore" />
 
     <InstallExecuteSequence>
-      <Custom Action="CreateScheduledTask" After="InstallFiles" Condition="NOT Installed" />
       <Custom Action="RemoveScheduledTask" Before="RemoveFiles" Condition="REMOVE=&quot;ALL&quot;" />
     </InstallExecuteSequence>
 

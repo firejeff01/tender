@@ -176,14 +176,19 @@ public sealed class AngleSharpTenderParser : ITenderParser
         if (string.IsNullOrWhiteSpace(href))
             return string.Empty;
 
-        if (href.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            return href;
-
-        // 相對路徑補全
+        // 相對路徑補全為 absolute URL
         if (href.StartsWith("/"))
             return "https://web.pcc.gov.tw" + href;
 
-        return href;
+        // 只接受 http/https；其他 scheme（file://, javascript:, cmd:…）視為無效，
+        // 避免後續 ProcessStartBrowserLauncher 被當成 URL handler 觸發。
+        if (Uri.TryCreate(href, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return uri.AbsoluteUri;
+        }
+
+        return string.Empty;
     }
 
     private static long? ParseBudget(string text)

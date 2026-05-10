@@ -13,8 +13,8 @@
 2. 安裝完成後會自動：
    - 在 `C:\Program Files\TenderSearch\` 部署檔案
    - 桌面與「開始」功能表建立「標案查詢」捷徑
-   - 在 Task Scheduler 建立 `TenderSearch.DailyCrawl` 每日 17:00 自動爬取任務
-3. 如果 Task Scheduler 沒被自動建立（權限不足），請從「開始」功能表 → 「標案查詢」資料夾 → 「建立每日排程」捷徑（**右鍵 → 以系統管理員身份執行**）
+3. 第一次從捷徑啟動桌面 app 時，會自動以**使用者層級**（不需 admin）建立 `TenderSearch.DailyCrawl` 每日 17:00 排程任務
+4. 如果排程沒被自動建立（例：Group Policy 禁用 schtasks），可從「開始」功能表 → 「標案查詢」資料夾 → 「建立每日排程」捷徑手動建立
 
 ### 系統需求
 
@@ -183,11 +183,12 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 
 ### 安裝後沒有 Task Scheduler 任務
 
-原因：MSI 安裝時 Custom Action 需要系統管理員權限。
+原因：可能是公司 Group Policy 禁用一般使用者呼叫 schtasks，或桌面 app 啟動後 5 秒內就被關閉。
 
 解法：
 1. 打開「開始」功能表 → 「標案查詢」資料夾
-2. **右鍵點「建立每日排程」捷徑** → 「以系統管理員身份執行」
+2. 點「建立每日排程」捷徑（一般使用者即可，不需 admin）
+3. 或重新從捷徑啟動桌面 app，讓它再嘗試一次
 
 ### 雙擊桌面捷徑沒反應
 

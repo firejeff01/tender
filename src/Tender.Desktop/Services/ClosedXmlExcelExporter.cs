@@ -39,7 +39,7 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
 
                 // A: 標案名稱（hyperlink）
                 var nameCell = ws.Cell(row, 1);
-                nameCell.Value = item.TenderName;
+                nameCell.Value = SanitizeForExcel(item.TenderName);
                 if (!string.IsNullOrWhiteSpace(item.DetailUrl))
                 {
                     nameCell.SetHyperlink(new XLHyperlink(item.DetailUrl));
@@ -48,14 +48,14 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
                 }
 
                 // B: 招標方式
-                ws.Cell(row, 2).Value = item.TenderMethod;
+                ws.Cell(row, 2).Value = SanitizeForExcel(item.TenderMethod);
                 // C: 採購性質
-                ws.Cell(row, 3).Value = item.ProcurementType ?? string.Empty;
+                ws.Cell(row, 3).Value = SanitizeForExcel(item.ProcurementType);
                 // D: 公告日期（text）
-                ws.Cell(row, 4).Value = item.AnnouncementDate;
+                ws.Cell(row, 4).Value = SanitizeForExcel(item.AnnouncementDate);
                 ws.Cell(row, 4).Style.NumberFormat.Format = "@";
                 // E: 截止投標（text）
-                ws.Cell(row, 5).Value = item.BidDeadline ?? string.Empty;
+                ws.Cell(row, 5).Value = SanitizeForExcel(item.BidDeadline);
                 ws.Cell(row, 5).Style.NumberFormat.Format = "@";
                 // F: 預算金額（number）
                 if (item.BudgetAmount.HasValue)
@@ -64,7 +64,7 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
                     ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0";
                 }
                 // G: 機關名稱
-                ws.Cell(row, 7).Value = item.AgencyName;
+                ws.Cell(row, 7).Value = SanitizeForExcel(item.AgencyName);
 
                 // H: 檢視連結（hyperlink）
                 if (!string.IsNullOrWhiteSpace(item.DetailUrl))
@@ -78,7 +78,7 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
 
                 // I: 機關名稱：標案名稱（hyperlink）
                 var combinedCell = ws.Cell(row, 9);
-                combinedCell.Value = $"{item.AgencyName}：{item.TenderName}";
+                combinedCell.Value = SanitizeForExcel($"{item.AgencyName}：{item.TenderName}");
                 if (!string.IsNullOrWhiteSpace(item.DetailUrl))
                 {
                     combinedCell.SetHyperlink(new XLHyperlink(item.DetailUrl));
@@ -87,7 +87,7 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
                 }
 
                 // J: 命中關鍵字
-                ws.Cell(row, 10).Value = string.Join("、", item.MatchedKeywords);
+                ws.Cell(row, 10).Value = SanitizeForExcel(string.Join("、", item.MatchedKeywords));
 
                 row++;
             }
@@ -98,5 +98,19 @@ public sealed class ClosedXmlExcelExporter : IExcelExporter
 
             wb.SaveAs(savePath);
         }, ct);
+    }
+
+    // 防 Excel/CSV formula injection：上游字串若以 = + - @ \t \r 開頭，
+    // 使用者在 Excel 中按 F2 + Enter 可能會被重新解讀為公式（例如
+    // =HYPERLINK("https://evil","click")、=cmd|'/c calc'!A0）。前置一個
+    // 單引號讓 Excel 視為純文字，符合 OWASP 建議。
+    private static string SanitizeForExcel(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        var first = value[0];
+        return (first == '=' || first == '+' || first == '-' || first == '@'
+                || first == '\t' || first == '\r')
+            ? "'" + value
+            : value;
     }
 }

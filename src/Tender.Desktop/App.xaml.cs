@@ -30,6 +30,20 @@ public partial class App : Application
 
         var shell = _host.Services.GetRequiredService<ShellWindow>();
         shell.Show();
+
+        // 確保每日排程任務以使用者層級存在（idempotent，schtasks /F）。
+        // 失敗（例：找不到 crawler exe、或公司 group policy 禁用 schtasks）不影響主程式。
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var settings = await _host.Services
+                    .GetRequiredService<IAppSettingsRepository>().LoadAsync();
+                _host.Services.GetRequiredService<IScheduledTaskInstaller>()
+                    .EnsureTask(settings.ScheduledTime);
+            }
+            catch { /* silent */ }
+        });
     }
 
     protected override async void OnExit(ExitEventArgs e)
@@ -80,6 +94,7 @@ public partial class App : Application
         services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();
         services.AddSingleton<IDataCleanupService, DataCleanupService>();
         services.AddSingleton<INotificationService, NotificationService>();
+        services.AddSingleton<IScheduledTaskInstaller, ScheduledTaskInstaller>();
 
         // ViewModels
         services.AddSingleton<MonthlyCalendarViewModel>();
