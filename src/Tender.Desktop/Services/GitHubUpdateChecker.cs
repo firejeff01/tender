@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Tender.Desktop.Services;
 
@@ -10,10 +11,10 @@ public sealed class GitHubUpdateChecker : IUpdateChecker
     private const string Owner = "firejeff01";
     private const string Repo = "tender";
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
+    // GitHub REST API 用 snake_case（tag_name、html_url、browser_download_url）。
+    // 早期 .CamelCase 是 bug：對應出來的 JSON key 是 tagName/htmlUrl，全部反序列化成 null，
+    // 導致 update checker 一直回傳「無更新」。改用顯式 JsonPropertyName 屬性對映。
+    private static readonly JsonSerializerOptions JsonOptions = new();
 
     public async Task<UpdateInfo> CheckAsync(CancellationToken ct = default)
     {
@@ -87,16 +88,28 @@ public sealed class GitHubUpdateChecker : IUpdateChecker
 
     private sealed record GitHubRelease
     {
+        [JsonPropertyName("tag_name")]
         public string? TagName { get; init; }
+
+        [JsonPropertyName("name")]
         public string? Name { get; init; }
+
+        [JsonPropertyName("body")]
         public string? Body { get; init; }
+
+        [JsonPropertyName("html_url")]
         public string? HtmlUrl { get; init; }
+
+        [JsonPropertyName("assets")]
         public List<GitHubAsset>? Assets { get; init; }
     }
 
     private sealed record GitHubAsset
     {
+        [JsonPropertyName("name")]
         public string? Name { get; init; }
+
+        [JsonPropertyName("browser_download_url")]
         public string? BrowserDownloadUrl { get; init; }
     }
 }
