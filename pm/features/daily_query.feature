@@ -46,7 +46,7 @@ Feature: 指定日期標案資料查詢
     Examples:
       | 篩選類型     | 篩選值                           | 驗證描述                          |
       | 招標方式     | 公開招標                         | "tenderMethod" 等於 "公開招標"     |
-      | 招標方式     | 公開取得電子報價單                | "tenderMethod" 等於 "公開取得電子報價單" |
+      | 招標方式     | 公開取得報價單或企劃書                | "tenderMethod" 等於 "公開取得報價單或企劃書" |
       | 採購性質     | 財物類                           | "procurementType" 等於 "財物類"    |
       | 只看尚未截止 | 啟用                             | "bidDeadline" 不早於今天          |
 

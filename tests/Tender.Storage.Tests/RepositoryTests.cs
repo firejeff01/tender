@@ -223,6 +223,39 @@ public sealed class RepositoryTests : IDisposable
         loaded.MaxRetries.Should().Be(3);
     }
 
+    [Fact]
+    public async Task AppSettingsRepository_MigratesLegacyTenderMethodName()
+    {
+        // 模擬 2026-05-11 改名前產出的 settings.json：保留舊字串「公開取得電子報價單」
+        var legacyJson = """
+            {
+              "scheduledTime": "17:00",
+              "catchupEnabled": true,
+              "updateCheckEnabled": true,
+              "requestDelayMs": 1500,
+              "maxRetries": 3,
+              "dataRetentionMonths": 6,
+              "targetTenderMethods": [
+                "公開招標",
+                "公開取得電子報價單",
+                "經公開評選或公開徵求之限制性招標"
+              ]
+            }
+            """;
+        Directory.CreateDirectory(Path.GetDirectoryName(_paths.AppSettingsFile)!);
+        await File.WriteAllTextAsync(_paths.AppSettingsFile, legacyJson, System.Text.Encoding.UTF8);
+
+        var repo = new AppSettingsRepository(_paths, _writer);
+        var loaded = await repo.LoadAsync();
+
+        loaded.TargetTenderMethods.Should().BeEquivalentTo(new[]
+        {
+            "公開招標",
+            "公開取得報價單或企劃書",
+            "經公開評選或公開徵求之限制性招標",
+        });
+    }
+
     // ========== UserMarksRepository ==========
 
     [Fact]

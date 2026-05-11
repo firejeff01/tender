@@ -92,7 +92,7 @@
   - **B. 取不到標案資料（空殼 HTML / JS-only）**：→ 引入 `Microsoft.Playwright`，2.2 用 Playwright 實作。
 - **同時記錄三件事**：
   1. 政府網站 HTTP 回應 Header（特別是 `Set-Cookie`、`X-Frame-Options`）
-  2. 「公開招標」、「公開取得電子報價單」、「經公開評選或公開徵求之限制性招標」三者實際的 option/value（補回 `TenderMethodMapping`）
+  2. 「公開招標」、「公開取得報價單或企劃書」、「經公開評選或公開徵求之限制性招標」三者實際的 option/value（補回 `TenderMethodMapping`）
   3. 標案詳情頁的 `pk` 參數格式
 
 ### 2.2 完整爬蟲實作

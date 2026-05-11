@@ -38,7 +38,7 @@ public sealed record AppSettings
     public IReadOnlyList<string> TargetTenderMethods { get; init; } = new[]
     {
         "公開招標",
-        "公開取得電子報價單",
+        "公開取得報價單或企劃書",
         "經公開評選或公開徵求之限制性招標"
     };
 }

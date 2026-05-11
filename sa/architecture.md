@@ -307,7 +307,7 @@ ICrawlerLauncher.LaunchAsync(mode = manual, date = today)
 |---|---|---|
 | **R1：政府網站使用 JavaScript 動態渲染** | `HttpClient + AngleSharp` 取不到資料，第一個 sprint 全失敗 | **Phase 2 起手即做爬蟲 PoC**：先用 HttpClient 抓首頁與查詢結果頁，確認是否能取得標案列表；若無法，立即切換 `Microsoft.Playwright`（headless Chromium）。本架構刻意把 `ICrawler` 抽成介面，實作可替換，不影響其他模組 |
 | **R2：政府網站反爬蟲（驗證碼、IP 限速）** | 排程被擋 | 加入合理延遲（每分頁 1~2 秒）、User-Agent 模擬正常瀏覽器、失敗指數退避重試（最多 3 次）、單日請求總量上限。若觸發驗證碼，記錄錯誤並通知使用者 |
-| **R3：「公開取得電子報價單」option/value 不確定** | 查詢條件帶錯參數，抓不到該類標案 | Phase 2 PoC 階段透過實際查詢頁面把所有招標方式 option/value 對照表列出，存於 `Tender.Core` 的 `TenderMethodMapping` 常數類別 |
+| **R3：「公開取得報價單或企劃書」option/value 不確定** | 查詢條件帶錯參數，抓不到該類標案 | Phase 2 PoC 階段透過實際查詢頁面把所有招標方式 option/value 對照表列出，存於 `Tender.Core` 的 `TenderMethodMapping` 常數類別 |
 | **R4：政府網站欄位異動** | 解析錯誤累積 | `ITenderParser` 對缺欄位採 nullable + 寫入 `errors.log`，不丟整批；定期人工檢查 `errors.log` 趨勢 |
 | **R5：JSON 寫入過程中斷導致檔案毀損** | 既有資料丟失 | 採暫存檔 + 原子替換（第 6.3 節），單元測試覆蓋「寫入中斷」情境 |
 | **R6：Per-user Task Scheduler 無系統管理員權限時失敗** | 部分企業環境 GPO 鎖定 Task Scheduler | 安裝程式偵測權限失敗時，降級為「每次桌面程式啟動時補跑」，並在安裝結果摘要明確提示 |

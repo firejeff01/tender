@@ -60,7 +60,7 @@ public sealed class AngleSharpTenderParserTests
         var items = _parser.Parse(html, _now);
 
         items[1].TenderName.Should().Be("原住民族文化數位學習平台維運服務案");
-        items[1].TenderMethod.Should().Be("公開取得電子報價單");
+        items[1].TenderMethod.Should().Be("公開取得報價單或企劃書");
         items[1].SourcePk.Should().Be("OGFiYzEyMzQ=");
     }
 

@@ -260,7 +260,7 @@ public sealed class HttpClientCrawlerTests
                 Content = new StringContent(MakeEmptyTenderHtml(), Encoding.UTF8, "text/html"),
             });
 
-        var methods = new[] { "公開招標", "公開取得電子報價單", "經公開評選或公開徵求之限制性招標" };
+        var methods = new[] { "公開招標", "公開取得報價單或企劃書", "經公開評選或公開徵求之限制性招標" };
         var crawler = CreateCrawler(requestDelayMs: 0);
         var pages = await crawler.FetchAsync(targetDate, methods);
 

@@ -262,7 +262,7 @@ namespace Tender.AcceptanceTests.Features
         [Xunit.TraitAttribute("FeatureTitle", "指定日期標案資料查詢")]
         [Xunit.TraitAttribute("Description", "套用單一篩選條件")]
         [Xunit.InlineDataAttribute("TenderMethod", "公開招標", "TenderItem.TenderMethod == \"公開招標\"", new string[0])]
-        [Xunit.InlineDataAttribute("TenderMethod", "公開取得電子報價單", "TenderItem.TenderMethod == \"公開取得電子報價單\"", new string[0])]
+        [Xunit.InlineDataAttribute("TenderMethod", "公開取得報價單或企劃書", "TenderItem.TenderMethod == \"公開取得報價單或企劃書\"", new string[0])]
         [Xunit.InlineDataAttribute("ProcurementType", "財物類", "TenderItem.ProcurementType == \"財物類\"", new string[0])]
         [Xunit.InlineDataAttribute("ShowActiveOnly", "true", "ITaiwanDateConverter.RocToDateOnly(BidDeadline) >= IClock.Today", new string[0])]
         public async System.Threading.Tasks.Task 套用單一篩選條件(string criteria屬性, string 篩選值, string 驗證描述, string[] exampleTags)

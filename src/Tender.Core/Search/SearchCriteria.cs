@@ -9,6 +9,18 @@ public sealed record SearchCriteria
     /// <summary>使用者搜尋框輸入字串，以空白分割為多個關鍵字（AND 命中、模糊查詢）。</summary>
     public string? KeywordQuery { get; init; }
 
+    /// <summary>
+    /// 若為 true，KeywordQuery 只比對 TenderName（標題）；
+    /// 否則同時比對 TenderName 與 AgencyName（預設行為）。
+    /// </summary>
+    public bool KeywordTitleOnly { get; init; }
+
+    /// <summary>
+    /// 反向搜尋；僅在 KeywordTitleOnly = true 時有效。
+    /// 啟用後保留「TenderName 不包含任一 token」的標案；多 token 任一命中即排除。
+    /// </summary>
+    public bool KeywordExclude { get; init; }
+
     /// <summary>關鍵字按鈕命中項（沿用 Excel 既有，多個按鈕之間採 OR 命中）。</summary>
     public IReadOnlyList<string> ActiveKeywordButtons { get; init; } = Array.Empty<string>();
 

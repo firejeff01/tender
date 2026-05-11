@@ -32,7 +32,7 @@ public sealed record TenderItem
     public string? TenderNo { get; init; }
 
     /// <summary>
-    /// 招標方式（保留來源網站文字，例：「公開招標」、「公開取得電子報價單」）。
+    /// 招標方式（保留來源網站文字，例：「公開招標」、「公開取得報價單或企劃書」）。
     /// 業務分類請參考 TenderMethod enum 的對應表。
     /// </summary>
     [JsonPropertyName("tenderMethod")]

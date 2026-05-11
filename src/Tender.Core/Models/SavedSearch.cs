@@ -11,6 +11,14 @@ public sealed record SavedSearch
     [JsonPropertyName("keywordQuery")]
     public string? KeywordQuery { get; init; }
 
+    /// <summary>搜尋僅比對標案名稱。</summary>
+    [JsonPropertyName("keywordTitleOnly")]
+    public bool KeywordTitleOnly { get; init; }
+
+    /// <summary>反向搜尋（標題不含關鍵字才保留）；僅在 KeywordTitleOnly = true 時有效。</summary>
+    [JsonPropertyName("keywordExclude")]
+    public bool KeywordExclude { get; init; }
+
     [JsonPropertyName("activeKeywords")]
     public IReadOnlyList<string> ActiveKeywords { get; init; } = Array.Empty<string>();
 

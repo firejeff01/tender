@@ -17,6 +17,7 @@ public partial class DailyQueryViewModel : ObservableObject
     private readonly IKeywordsRepository _keywordsRepo;
     private readonly IClock _clock;
     private readonly IExcelExporter _excelExporter;
+    private readonly IXlsmExporter _xlsmExporter;
     private readonly ISaveFileDialogService _saveDialog;
     private readonly IUserMarksRepository _userMarksRepo;
     private readonly ISavedSearchesRepository _savedSearchesRepo;
@@ -63,6 +64,14 @@ public partial class DailyQueryViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _keywordQuery;
+
+    /// <summary>搜尋僅比對標案名稱（不含機關名稱）。</summary>
+    [ObservableProperty]
+    private bool _keywordTitleOnly;
+
+    /// <summary>反向搜尋：標題不含關鍵字才保留。僅在 KeywordTitleOnly = true 時可勾選。</summary>
+    [ObservableProperty]
+    private bool _keywordExclude;
 
     [ObservableProperty]
     private SortKey _sortKey = SortKey.None;
@@ -113,6 +122,7 @@ public partial class DailyQueryViewModel : ObservableObject
         IKeywordsRepository keywordsRepo,
         IClock clock,
         IExcelExporter excelExporter,
+        IXlsmExporter xlsmExporter,
         ISaveFileDialogService saveDialog,
         IUserMarksRepository userMarksRepo,
         ISavedSearchesRepository savedSearchesRepo)
@@ -123,6 +133,7 @@ public partial class DailyQueryViewModel : ObservableObject
         _keywordsRepo = keywordsRepo;
         _clock = clock;
         _excelExporter = excelExporter;
+        _xlsmExporter = xlsmExporter;
         _saveDialog = saveDialog;
         _userMarksRepo = userMarksRepo;
         _savedSearchesRepo = savedSearchesRepo;
@@ -148,6 +159,8 @@ public partial class DailyQueryViewModel : ObservableObject
         {
             Name = name,
             KeywordQuery = KeywordQuery,
+            KeywordTitleOnly = KeywordTitleOnly,
+            KeywordExclude = KeywordExclude,
             ActiveKeywords = KeywordGroups.SelectMany(g => g.Buttons).Where(b => b.IsActive).Select(b => b.Keyword).ToList().AsReadOnly(),
             TenderMethod = SelectedTenderMethod == "（不限）" ? null : SelectedTenderMethod,
             ProcurementType = SelectedProcurementType == "（不限）" ? null : SelectedProcurementType,
@@ -168,6 +181,8 @@ public partial class DailyQueryViewModel : ObservableObject
     {
         if (search == null) return;
         KeywordQuery = search.KeywordQuery;
+        KeywordTitleOnly = search.KeywordTitleOnly;
+        KeywordExclude = search.KeywordExclude;
         var activeSet = new HashSet<string>(search.ActiveKeywords);
         foreach (var btn in KeywordGroups.SelectMany(g => g.Buttons))
             btn.IsActive = activeSet.Contains(btn.Keyword);
@@ -377,6 +392,8 @@ public partial class DailyQueryViewModel : ObservableObject
             foreach (var btn in group.Buttons)
                 btn.IsActive = false;
         KeywordQuery = null;
+        KeywordTitleOnly = false;
+        KeywordExclude = false;
         ShowActiveOnly = false;
         ShowFavoritesOnly = false;
         ShowExcluded = false;
@@ -489,7 +506,42 @@ public partial class DailyQueryViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task ExportXlsmAsync(CancellationToken ct)
+    {
+        if (AllItems.Count == 0)
+        {
+            ErrorMessage = "目前沒有可匯出的資料";
+            return;
+        }
+
+        var suggested = IsRangeMode
+            ? $"標案_{Date:yyyyMMdd}~{DateTo!.Value:yyyyMMdd}.xlsm"
+            : $"標案_{Date:yyyyMMdd}.xlsm";
+        var savePath = _saveDialog.ShowSaveAsXlsm(suggested);
+        if (string.IsNullOrEmpty(savePath)) return;
+
+        try
+        {
+            IsLoading = true;
+            var allRaw      = AllItems.Select(vm => vm.Item).ToList().AsReadOnly();
+            var filteredRaw = FilteredItems.Select(vm => vm.Item).ToList().AsReadOnly();
+            await _xlsmExporter.ExportAsync(allRaw, filteredRaw, savePath, ct);
+            ErrorMessage = $"已匯出（全部 {AllItems.Count} / 篩選 {FilteredItems.Count} 筆，含巨集）→ {savePath}";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"匯出失敗：{ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     partial void OnKeywordQueryChanged(string? value) => ApplyFilter();
+    partial void OnKeywordTitleOnlyChanged(bool value) => ApplyFilter();
+    partial void OnKeywordExcludeChanged(bool value) => ApplyFilter();
     partial void OnSortKeyChanged(SortKey value) => ApplyFilter();
     partial void OnSortDirectionChanged(SortDirection value) => ApplyFilter();
     partial void OnShowActiveOnlyChanged(bool value) => ApplyFilter();
@@ -559,6 +611,8 @@ public partial class DailyQueryViewModel : ObservableObject
         var criteria = new SearchCriteria
         {
             KeywordQuery = KeywordQuery,
+            KeywordTitleOnly = KeywordTitleOnly,
+            KeywordExclude = KeywordExclude,
             ActiveKeywordButtons = activeKeywords,
             ShowActiveOnly = ShowActiveOnly,
             TenderMethod = SelectedTenderMethod == "（不限）" ? null : SelectedTenderMethod,

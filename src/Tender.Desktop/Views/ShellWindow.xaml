@@ -111,7 +111,20 @@
                     <Button Content="🖨 列印"
                             Command="{Binding CurrentDailyQueryVm.PrintCommand}"
                             Visibility="{Binding IsDailyQueryVisible, Converter={StaticResource BoolToVis}}"
+                            Background="{StaticResource InfoBrush}"
+                            Foreground="{StaticResource TextOnPrimaryBrush}"
+                            BorderBrush="{StaticResource InfoBrush}"
                             Padding="12,5" Margin="0,0,8,0" />
+
+                    <!-- 匯出 xlsm（含巨集模板）：只在查詢頁時顯示，置於匯出 Excel 左側 -->
+                    <Button Content="📑 匯出 xlsm"
+                            Command="{Binding CurrentDailyQueryVm.ExportXlsmCommand}"
+                            Visibility="{Binding IsDailyQueryVisible, Converter={StaticResource BoolToVis}}"
+                            Background="{StaticResource WarningBrush}"
+                            Foreground="{StaticResource TextOnPrimaryBrush}"
+                            BorderBrush="{StaticResource WarningBrush}"
+                            Padding="12,5" Margin="0,0,8,0"
+                            ToolTip="匯出為 .xlsm（含 88 個關鍵字按鈕與 VBA 巨集）" />
 
                     <!-- 匯出 Excel：只在查詢頁時顯示 -->
                     <Button Content="📊 匯出 Excel"

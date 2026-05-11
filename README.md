@@ -170,7 +170,7 @@ dotnet run --project src/Tender.Crawler -- --mode manual --target-date 2026-05-0
 | 條件 | 值 |
 |---|---|
 | 招標類型 (`tenderType`) | `TENDER_DECLARATION`（招標公告） |
-| 招標方式 (`tenderWay`) | `TENDER_WAY_1`（公開招標）/ `TENDER_WAY_12`（公開取得電子報價單）/ `TENDER_WAY_4`（經公開評選或公開徵求之限制性招標）— 三種輪流跑 |
+| 招標方式 (`tenderWay`) | `TENDER_WAY_1`（公開招標）/ `TENDER_WAY_2`（公開取得報價單或企劃書）/ `TENDER_WAY_4`（經公開評選或公開徵求之限制性招標）— 三種輪流跑 |
 | 公告日期 (`dateType=isDate` + `tenderStartDate=tenderEndDate=YYYY/MM/DD` 西元) | 鎖單日 |
 | 分頁 | `d-49738-p=N`（displaytag 約定）；`pageSize=2000` 通常一次拉完一天 |
 

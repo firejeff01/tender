@@ -68,7 +68,7 @@ public sealed record TenderItem
     public string? TenderNo { get; init; }
 
     /// <summary>
-    /// 招標方式（保留來源網站文字，例：「公開招標」、「公開取得電子報價單」）。
+    /// 招標方式（保留來源網站文字，例：「公開招標」、「公開取得報價單或企劃書」）。
     /// 業務分類請參考 TenderMethod enum 的對應表。
     /// </summary>
     [JsonPropertyName("tenderMethod")]
@@ -402,7 +402,7 @@ public sealed record AppSettings
     public IReadOnlyList<string> TargetTenderMethods { get; init; } = new[]
     {
         "公開招標",
-        "公開取得電子報價單",
+        "公開取得報價單或企劃書",
         "經公開評選或公開徵求之限制性招標"
     };
 }
@@ -651,7 +651,7 @@ public sealed record AppSettings
   "maxRetries": 3,
   "targetTenderMethods": [
     "公開招標",
-    "公開取得電子報價單",
+    "公開取得報價單或企劃書",
     "經公開評選或公開徵求之限制性招標"
   ]
 }

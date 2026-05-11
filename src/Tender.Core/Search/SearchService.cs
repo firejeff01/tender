@@ -29,18 +29,28 @@ public sealed class SearchService : ISearchService
     {
         var query = items.AsEnumerable();
 
-        // 1. KeywordQuery：以空白分割，AND 邏輯，子字串包含
+        // 1. KeywordQuery
+        //    - 分隔符：逗號（半形 ','、全形 '，'）；token 之間採 OR
+        //    - 空白為字面值的一部分（例「AI 系統」就找含「AI 系統」這個整字串）
+        //    - TitleOnly：只比對 TenderName，否則比對 TenderName OR AgencyName
+        //    - Exclude：把命中者排除（與 TitleOnly 獨立，可單獨啟用）
         if (!string.IsNullOrWhiteSpace(criteria.KeywordQuery))
         {
             var tokens = criteria.KeywordQuery
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                .Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            foreach (var token in tokens)
+            if (tokens.Length > 0)
             {
-                var t = token; // capture
-                query = query.Where(item =>
-                    item.TenderName.Contains(t, StringComparison.OrdinalIgnoreCase) ||
-                    item.AgencyName.Contains(t, StringComparison.OrdinalIgnoreCase));
+                var titleOnly = criteria.KeywordTitleOnly;
+                var exclude   = criteria.KeywordExclude;
+                Func<TenderItem, bool> anyTokenHit = item =>
+                    tokens.Any(t =>
+                        item.TenderName.Contains(t, StringComparison.OrdinalIgnoreCase) ||
+                        (!titleOnly && item.AgencyName.Contains(t, StringComparison.OrdinalIgnoreCase)));
+
+                query = exclude
+                    ? query.Where(item => !anyTokenHit(item))
+                    : query.Where(item => anyTokenHit(item));
             }
         }
 

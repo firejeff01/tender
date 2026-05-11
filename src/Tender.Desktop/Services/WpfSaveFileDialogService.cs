@@ -17,4 +17,18 @@ public sealed class WpfSaveFileDialogService : ISaveFileDialogService
 
         return dlg.ShowDialog() == true ? dlg.FileName : null;
     }
+
+    public string? ShowSaveAsXlsm(string suggestedFileName)
+    {
+        var dlg = new SaveFileDialog
+        {
+            Filter = "Excel 啟用巨集的活頁簿 (*.xlsm)|*.xlsm",
+            DefaultExt = ".xlsm",
+            FileName = suggestedFileName,
+            AddExtension = true,
+            OverwritePrompt = true,
+        };
+
+        return dlg.ShowDialog() == true ? dlg.FileName : null;
+    }
 }

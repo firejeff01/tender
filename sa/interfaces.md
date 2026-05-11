@@ -142,10 +142,10 @@ public static class TenderMethodMapping
     public static IReadOnlyDictionary<string, string> BusinessNameToOptionValue { get; } =
         new Dictionary<string, string>
         {
-            // TODO: PoC 階段確認下列 value
-            { "公開招標", "TBD" },
-            { "公開取得電子報價單", "TBD" },
-            { "經公開評選或公開徵求之限制性招標", "TBD" },
+            // PoC 已於 2026-05-11 完成，value 取自 readTenderAdvanced 頁面
+            { "公開招標", "TENDER_WAY_1" },
+            { "公開取得報價單或企劃書", "TENDER_WAY_2" },
+            { "經公開評選或公開徵求之限制性招標", "TENDER_WAY_4" },
         };
 
     /// <summary>網站文字 → 業務名稱反向對應（用於解析時正規化）。</summary>

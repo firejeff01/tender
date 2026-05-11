@@ -89,6 +89,7 @@ public partial class App : Application
         services.AddSingleton<ICrawlerLauncher, CrawlerLauncher>();
         services.AddSingleton<IMissedRunDetector, MissedRunDetector>();
         services.AddSingleton<IExcelExporter, ClosedXmlExcelExporter>();
+        services.AddSingleton<IXlsmExporter, TemplateXlsmExporter>();
         services.AddSingleton<ISaveFileDialogService, WpfSaveFileDialogService>();
         services.AddSingleton<IErrorSummaryDialog, WpfErrorSummaryDialog>();
         services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();

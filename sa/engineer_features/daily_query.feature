@@ -57,7 +57,7 @@ Feature: 指定日期標案資料查詢
     Examples:
       | Criteria屬性     | 篩選值              | 驗證描述                              |
       | TenderMethod     | 公開招標            | TenderItem.TenderMethod == "公開招標" |
-      | TenderMethod     | 公開取得電子報價單  | TenderItem.TenderMethod == "公開取得電子報價單" |
+      | TenderMethod     | 公開取得報價單或企劃書  | TenderItem.TenderMethod == "公開取得報價單或企劃書" |
       | ProcurementType  | 財物類              | TenderItem.ProcurementType == "財物類" |
       | ShowActiveOnly   | true                | ITaiwanDateConverter.RocToDateOnly(BidDeadline) >= IClock.Today |
 

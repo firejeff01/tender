@@ -15,7 +15,7 @@ Feature: 每日標案爬蟲（自動排程與手動更新）
   Background:
     Given 已在測試目錄下初始化資料根目錄 "${TEST_DATA_ROOT}/TenderSearch/data/"
     And IDataPaths.DataRoot 指向 "${TEST_DATA_ROOT}/TenderSearch/data/"
-    And IAppSettingsRepository.LoadAsync() 回傳預設值，targetTenderMethods 為 ["公開招標", "公開取得電子報價單", "經公開評選或公開徵求之限制性招標"]
+    And IAppSettingsRepository.LoadAsync() 回傳預設值，targetTenderMethods 為 ["公開招標", "公開取得報價單或企劃書", "經公開評選或公開徵求之限制性招標"]
     And 系統時區固定為 "Asia/Taipei" (UTC+8)
     And ICrawler 已被 Mock，可由測試控制回傳的 FetchedPage[]
 
@@ -28,7 +28,7 @@ Feature: 每日標案爬蟲（自動排程與手動更新）
     And ICrawler Mock 回傳 5 筆標案，sourcePk 分別為 "PK001"~"PK005"
     When 執行 ICrawlerOrchestrator.RunAsync(new CrawlerArgs { Mode = Scheduled, TargetDate = 2026-05-08 })
     Then ICrawler.FetchAsync 應被呼叫，targetDate 參數為 "2026-05-08"
-    And ICrawler.FetchAsync 的 tenderMethods 參數應為 ["公開招標", "公開取得電子報價單", "經公開評選或公開徵求之限制性招標"]
+    And ICrawler.FetchAsync 的 tenderMethods 參數應為 ["公開招標", "公開取得報價單或企劃書", "經公開評選或公開徵求之限制性招標"]
     And 檔案 "${TEST_DATA_ROOT}/TenderSearch/data/2026-05/2026-05-08/tenders.json" 應存在
     And tenders.json 反序列化後 DailyTenderSnapshot.Date 應為 "2026-05-08"
     And tenders.json 的 Items 每筆都應包含非空的 SourcePk、AgencyName、TenderName、TenderMethod、AnnouncementDate、DetailUrl

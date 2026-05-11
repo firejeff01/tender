@@ -208,6 +208,16 @@
                     <TextBlock Text="搜尋：" VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding KeywordQuery, UpdateSourceTrigger=PropertyChanged, Delay=300}"
                              Width="220" Height="28" Margin="4,0,0,0" VerticalContentAlignment="Center" />
+                    <CheckBox Content="標題"
+                              IsChecked="{Binding KeywordTitleOnly}"
+                              VerticalAlignment="Center" Margin="6,0,0,0"
+                              Foreground="{StaticResource TextPrimaryBrush}"
+                              ToolTip="僅比對標案名稱（不含機關名稱）" />
+                    <CheckBox Content="排除"
+                              IsChecked="{Binding KeywordExclude}"
+                              VerticalAlignment="Center" Margin="6,0,0,0"
+                              Foreground="{StaticResource TextPrimaryBrush}"
+                              ToolTip="反向搜尋：命中關鍵字的標案會被排除。可獨立於「標題」使用。&#x0a;多關鍵字以逗號分隔（任一命中即排除）" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,16,4">

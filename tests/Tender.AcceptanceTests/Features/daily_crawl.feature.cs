@@ -93,8 +93,8 @@ namespace Tender.AcceptanceTests.Features
     await testRunner.AndAsync("IDataPaths.DataRoot 指向 \"${TEST_DATA_ROOT}/TenderSearch/data/\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 18
-    await testRunner.AndAsync(("IAppSettingsRepository.LoadAsync() 回傳預設值，targetTenderMethods 為 [\"公開招標\", \"公開取得電子報價" +
-                    "單\", \"經公開評選或公開徵求之限制性招標\"]"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("IAppSettingsRepository.LoadAsync() 回傳預設值，targetTenderMethods 為 [\"公開招標\", \"公開取得報價單或" +
+                    "企劃書\", \"經公開評選或公開徵求之限制性招標\"]"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 19
     await testRunner.AndAsync("系統時區固定為 \"Asia/Taipei\" (UTC+8)", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
@@ -149,8 +149,8 @@ namespace Tender.AcceptanceTests.Features
     await testRunner.ThenAsync("ICrawler.FetchAsync 應被呼叫，targetDate 參數為 \"2026-05-08\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 31
-    await testRunner.AndAsync(("ICrawler.FetchAsync 的 tenderMethods 參數應為 [\"公開招標\", \"公開取得電子報價單\", \"經公開評選或公開徵求之限制性招標\"" +
-                        "]"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync(("ICrawler.FetchAsync 的 tenderMethods 參數應為 [\"公開招標\", \"公開取得報價單或企劃書\", \"經公開評選或公開徵求之限制性招" +
+                        "標\"]"), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 32
     await testRunner.AndAsync("檔案 \"${TEST_DATA_ROOT}/TenderSearch/data/2026-05/2026-05-08/tenders.json\" 應存在", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");

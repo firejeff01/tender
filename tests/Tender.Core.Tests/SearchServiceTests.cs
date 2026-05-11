@@ -43,14 +43,14 @@ public sealed class SearchServiceTests
     private static readonly IReadOnlyList<TenderItem> SampleItems = new[]
     {
         MakeItem("A001", "AI 系統建置", "臺北市政府", "公開招標", "勞務類", "115/05/01", "115/05/10", 500_000, new[] { "AI", "系統" }),
-        MakeItem("A002", "無障礙網站評估", "高雄市政府", "公開取得電子報價單", "勞務類", "115/05/03", "115/05/15", 200_000, new[] { "無障礙" }),
+        MakeItem("A002", "無障礙網站評估", "高雄市政府", "公開取得報價單或企劃書", "勞務類", "115/05/03", "115/05/15", 200_000, new[] { "無障礙" }),
         MakeItem("A003", "智慧倉儲系統", "經濟部", "公開招標", "財物類", "115/05/06", "115/04/30", 5_000_000, new[] { "智慧", "倉儲" }),
         MakeItem("A004", "ESG 永續報告書", "原住民族委員會", "公開招標", "勞務類", "115/05/08", null, null, new[] { "ESG" }),
     };
 
-    // ---- KeywordQuery AND 邏輯 ----
+    // ---- KeywordQuery：逗號 OR 邏輯 / 空白為字面值 ----
     [Fact]
-    public void Search_KeywordQuery_SingleToken_FiltersCorrectly()
+    public void Search_KeywordQuery_SingleToken_MatchesTenderNameOrAgencyName()
     {
         var criteria = new SearchCriteria { KeywordQuery = "AI" };
         var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
@@ -58,12 +58,42 @@ public sealed class SearchServiceTests
     }
 
     [Fact]
-    public void Search_KeywordQuery_MultipleTokensAndLogic()
+    public void Search_KeywordQuery_CommaSeparated_OrLogic_HalfWidth()
     {
-        // "AI 系統" → 必須同時含 AI 和 系統
+        // "工程,AI" → 標題或機關名含「工程」OR「AI」任一即命中
+        // 範例資料無「工程」標案 → 只剩 A001 (AI)
+        var criteria = new SearchCriteria { KeywordQuery = "工程,AI" };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().ContainSingle(x => x.SourcePk == "A001");
+    }
+
+    [Fact]
+    public void Search_KeywordQuery_CommaSeparated_OrLogic_FullWidth()
+    {
+        // 全形逗號「，」也視為分隔符；多 token OR：「AI」OR「ESG」→ A001 + A004
+        var criteria = new SearchCriteria { KeywordQuery = "AI，ESG" };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().HaveCount(2)
+            .And.Contain(x => x.SourcePk == "A001")
+            .And.Contain(x => x.SourcePk == "A004");
+    }
+
+    [Fact]
+    public void Search_KeywordQuery_SpaceInsideToken_IsLiteral()
+    {
+        // 「AI 系統」視為字面子字串（含空白）。A001 的 TenderName 為 "AI 系統建置" → 命中
         var criteria = new SearchCriteria { KeywordQuery = "AI 系統" };
         var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
         result.Should().ContainSingle(x => x.SourcePk == "A001");
+    }
+
+    [Fact]
+    public void Search_KeywordQuery_SpaceLiteral_NoMatchWhenAdjacent()
+    {
+        // 「智慧 倉儲」（含空白）在 A003 的 TenderName "智慧倉儲系統"（無空白）中找不到 → 0 筆
+        var criteria = new SearchCriteria { KeywordQuery = "智慧 倉儲" };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().BeEmpty();
     }
 
     [Fact]
@@ -72,6 +102,79 @@ public sealed class SearchServiceTests
         var criteria = new SearchCriteria { KeywordQuery = "XXXXXX不存在" };
         var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
         result.Should().BeEmpty();
+    }
+
+    // ---- KeywordTitleOnly：只比對 TenderName ----
+    [Fact]
+    public void Search_KeywordTitleOnly_OnlyMatchesTenderName()
+    {
+        // "政府" 在 A002 的 AgencyName=高雄市政府 命中（預設模式會找到），
+        // 但 TenderName 全部都沒有「政府」字樣，TitleOnly 啟用後應為 0 筆
+        var criteria = new SearchCriteria { KeywordQuery = "政府", KeywordTitleOnly = true };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Search_KeywordTitleOnly_MatchesAcrossTenderName()
+    {
+        // "系統" 在 A001 與 A003 的 TenderName 命中
+        var criteria = new SearchCriteria { KeywordQuery = "系統", KeywordTitleOnly = true };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().HaveCount(2)
+            .And.Contain(x => x.SourcePk == "A001")
+            .And.Contain(x => x.SourcePk == "A003");
+    }
+
+    // ---- KeywordExclude：排除（與 TitleOnly 獨立） ----
+    [Fact]
+    public void Search_KeywordExclude_WithoutTitleOnly_ExcludesAcrossBothFields()
+    {
+        // 沒勾標題、勾排除：標題 OR 機關名命中即排除
+        // "政府" 命中 A001(臺北市政府)、A002(高雄市政府)；排除後剩 A003、A004
+        var criteria = new SearchCriteria
+        {
+            KeywordQuery = "政府",
+            KeywordTitleOnly = false,
+            KeywordExclude = true,
+        };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().HaveCount(2)
+            .And.Contain(x => x.SourcePk == "A003")
+            .And.Contain(x => x.SourcePk == "A004");
+    }
+
+    [Fact]
+    public void Search_KeywordExclude_WithTitleOnly_OnlyExcludesByTitle()
+    {
+        // 勾標題＋勾排除：只看 TenderName，命中者排除
+        // "系統" 在標題命中 A001 與 A003；排除後剩 A002、A004
+        var criteria = new SearchCriteria
+        {
+            KeywordQuery = "系統",
+            KeywordTitleOnly = true,
+            KeywordExclude = true,
+        };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().HaveCount(2)
+            .And.Contain(x => x.SourcePk == "A002")
+            .And.Contain(x => x.SourcePk == "A004");
+    }
+
+    [Fact]
+    public void Search_KeywordExclude_CommaSeparated_AnyTokenMatchExcludes()
+    {
+        // 排除任一 token 命中（標題 OR 機關名）：
+        // "AI,ESG" 命中 A001(AI)、A004(ESG)；排除後剩 A002、A003
+        var criteria = new SearchCriteria
+        {
+            KeywordQuery = "AI,ESG",
+            KeywordExclude = true,
+        };
+        var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
+        result.Should().HaveCount(2)
+            .And.Contain(x => x.SourcePk == "A002")
+            .And.Contain(x => x.SourcePk == "A003");
     }
 
     // ---- ActiveKeywordButtons OR 邏輯 ----
@@ -89,7 +192,7 @@ public sealed class SearchServiceTests
     [Fact]
     public void Search_TenderMethod_FiltersCorrectly()
     {
-        var criteria = new SearchCriteria { TenderMethod = "公開取得電子報價單" };
+        var criteria = new SearchCriteria { TenderMethod = "公開取得報價單或企劃書" };
         var result = _sut.Search(SampleItems, criteria, SortKey.None, SortDirection.Ascending, Today);
         result.Should().ContainSingle(x => x.SourcePk == "A002");
     }

@@ -32,4 +32,11 @@
     <Resource Include="AppIcon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- XLSM 範本：含 VBA 巨集與 88 個關鍵字按鈕，匯出時複製為輸出檔基底 -->
+    <Content Include="Templates\tender-template.xlsm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
