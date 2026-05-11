@@ -374,12 +374,12 @@
       <dl class="meta">
         <div><dt>產品名稱</dt><dd>TenderSearch</dd></div>
         <div><dt>分類</dt><dd>內部桌面工具（Windows）</dd></div>
-        <div><dt>報告日期</dt><dd>2026-05-10（v1.4 增量功能 + 重掃）</dd></div>
-        <div><dt>報告版本</dt><dd>1.4</dd></div>
+        <div><dt>報告日期</dt><dd>2026-05-11（v1.5 業務功能增量 + 重掃）</dd></div>
+        <div><dt>報告版本</dt><dd>1.5</dd></div>
         <div><dt>執行環境</dt><dd>.NET 10 LTS（支援至 2028-11）</dd></div>
-        <div><dt>單元測試覆蓋</dt><dd>160 / 160 通過</dd></div>
+        <div><dt>單元測試覆蓋</dt><dd>169 / 169 通過</dd></div>
         <div><dt>套件 audit 結果</dt><dd>0 known vuln</dd></div>
-        <div><dt>分支</dt><dd>dev10（待 review／merge）</dd></div>
+        <div><dt>分支</dt><dd>main（v1.5 已合併）</dd></div>
       </dl>
     </header>
 
@@ -422,7 +422,7 @@
         </div>
         <div class="stat">
           <div class="label">已修弱點</div>
-          <div class="value">6 / 9</div>
+          <div class="value">7 / 9</div>
         </div>
         <div class="stat">
           <div class="label">待辦弱點</div>
@@ -458,6 +458,21 @@
         （Command 引號污染、預設 <code>DisallowStartIfOnBatteries=true</code> 導致筆電拔電卡 Queued）。
         所有新增程式碼路徑經安全審查 <strong>無新弱點</strong>；XML 模板對外部值
         （路徑、時間）皆使用 <code>SecurityElement.Escape</code> + regex 預先驗證。
+      </p>
+      <p>
+        <strong>v1.5 補充：</strong>三項業務功能增量已從 dev 合併至 main：(a)
+        招標方式 PM 訂正——「公開取得電子報價單」(TENDER_WAY_12) 改為「公開取得報價單或企劃書」
+        (TENDER_WAY_2)，<code>AppSettingsRepository</code> 加入舊字串自動 migration 確保
+        既有使用者勾選狀態不遺失；(b) 搜尋強化——
+        <code>SearchCriteria</code> 加入 <code>KeywordTitleOnly</code> 與
+        <code>KeywordExclude</code> 旗標、多關鍵字以逗號（半／全形）為 OR 分隔、
+        空白保留為字面值，<code>SavedSearch</code> 同步持久化兩個新旗標；(c) XLSM
+        匯出（含 VBA 巨集模板）——新增 <code>IXlsmExporter</code> 與
+        <code>TemplateXlsmExporter</code>，以模板複製 + <code>ZipArchive</code> 寫入三個工作表
+        （全部資料 / 篩選 / 工作表1），保留 88 個關鍵字按鈕與 VBA 巨集功能。所有新增字串路徑沿用
+        <code>SanitizeForExcel</code>（防 Formula Injection）並加 <code>EscapeXmlText</code>／
+        <code>EscapeXmlAttr</code>（XML escape）；<strong>無新弱點</strong>。單元測試由 160 增至 169，
+        全綠。
       </p>
     </section>
 
@@ -1044,6 +1059,109 @@
         <strong>處置建議：</strong>每月固定時間檢視 Dependabot PR，逐一 merge 或拒絕。
         若 PR 帶 <code>security</code> 標籤（含 advisory）應優先處理。
       </p>
+
+      <h3>6.7 v1.5 增量功能與安全審查</h3>
+      <p>
+        v1.5 共 3 個業務功能群組從 dev 合併至 main（commit
+        <code>d440e1c add download xlsm and search filter</code>，38 個檔案、+814／−56 行）。
+        所有新增程式碼皆經獨立安全審查，<strong>未引入新弱點</strong>。下表為對應變動：
+      </p>
+      <table>
+        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+        <tr>
+          <td rowspan="2">資料對應修正</td>
+          <td>招標方式 PM 訂正</td>
+          <td><code>TenderMethodMapping.cs</code>、
+              <code>AppSettings.cs</code>、
+              <code>CrawlerOrchestrator.cs</code>、
+              <code>TenderItem.cs</code></td>
+          <td>「公開取得電子報價單」(TENDER_WAY_12) → 「公開取得報價單或企劃書」(TENDER_WAY_2)。
+              純資料常數變更，無外部輸入處理路徑變動。已透過實際查詢
+              <code>readTenderAdvanced</code> 頁面的 <code>select[name=tenderWay]</code>
+              元素確認 option value（2026-05-11）。</td>
+        </tr>
+        <tr>
+          <td>既有 settings.json 自動 migration</td>
+          <td><code>AppSettingsRepository.cs</code>、
+              <code>TenderMethodMapping.MigrateLegacyName</code></td>
+          <td>讀取階段純記憶體內字串替換 + <code>Distinct()</code>，
+              不寫回硬碟（檔案在使用者下次按儲存時自然更新）；無路徑拼接、無反序列化新攻擊面。
+              新增單元測試
+              <code>AppSettingsRepository_MigratesLegacyTenderMethodName</code> 驗證。</td>
+        </tr>
+        <tr>
+          <td rowspan="3">搜尋強化</td>
+          <td>TitleOnly + Exclude 兩個篩選旗標</td>
+          <td><code>SearchCriteria.cs</code>、<code>SearchService.cs</code>、
+              <code>DailyQueryViewModel.cs</code>、<code>DailyQueryView.xaml</code></td>
+          <td>純記憶體內 LINQ 述詞組合（<code>Contains</code> 子字串、
+              <code>StringComparison.OrdinalIgnoreCase</code>），對 in-memory
+              <code>TenderItem</code> 集合操作。無正則、無 SQL、無使用者輸入觸發外部 I/O。</td>
+        </tr>
+        <tr>
+          <td>逗號 OR 分隔、空白字面化</td>
+          <td><code>SearchService.cs</code></td>
+          <td>token 分隔符限定半形 <code>,</code> 與全形 <code>，</code>，
+              使用 <code>Split(new[]{ ',', '，' }, RemoveEmptyEntries|TrimEntries)</code>。
+              空白保留為字面子字串。新增 5 個語意測試覆蓋 OR／字面空白／無命中情境。</td>
+        </tr>
+        <tr>
+          <td>SavedSearch 持久化新旗標</td>
+          <td><code>SavedSearch.cs</code>、<code>DailyQueryViewModel.cs</code></td>
+          <td>新增兩個 <code>JsonPropertyName</code> 屬性，沿用
+              <code>System.Text.Json</code> 嚴格反序列化（無 Newtonsoft、無多型）；
+              舊 JSON 缺欄位自動帶 <code>false</code>，無需 migration。</td>
+        </tr>
+        <tr>
+          <td rowspan="3">XLSM 匯出（含 VBA 巨集模板）</td>
+          <td>新增 <code>IXlsmExporter</code> + <code>TemplateXlsmExporter</code></td>
+          <td><code>Services/IXlsmExporter.cs</code>、
+              <code>Services/TemplateXlsmExporter.cs</code>、
+              <code>Templates/tender-template.xlsm</code></td>
+          <td>模板複製 + <code>System.IO.Compression.ZipArchive</code> 重寫 3 個 sheet 與
+              對應 _rels；不解析、不執行模板內 VBA 內容；以
+              <code>inlineStr</code> 寫入字串避免動 sharedStrings.xml。
+              <strong>SanitizeForExcel</strong>（沿用 F-004 修補的 OWASP 防 Formula Injection 規則）
+              + <strong>EscapeXmlText/EscapeXmlAttr</strong>（XML 5 大實體 + 控制字元濾除）
+              覆蓋所有自由文字欄位（標案名稱、機關名稱、案號、招標方式、採購性質、日期）。
+              hyperlink URL 同樣經 XML attribute escape 後才寫入 <code>Target</code>。</td>
+        </tr>
+        <tr>
+          <td>模板供應鏈與 VBA 巨集</td>
+          <td><code>Templates/tender-template.xlsm</code>（142 KB，內含
+              <code>vbaProject.bin</code> 100 KB）</td>
+          <td>模板由 PM 提供（原始檔 <code>1150508標案.xlsm</code>），已清除所有舊資料行、
+              hyperlink rel、autoFilter criteria，僅保留 88 個關鍵字按鈕、樣式與 VBA 巨集。
+              <strong>巨集未數位簽章</strong>，使用者開啟時 Excel 會跳「啟用內容」警告——
+              與直接打開原始 1150508 檔行為一致，符合公司現行慣例。
+              模板進版控（git）可審計，且僅本工具產出的 xlsm 才會帶入該巨集。</td>
+        </tr>
+        <tr>
+          <td>UI 接線</td>
+          <td><code>ShellWindow.xaml</code>、<code>DailyQueryViewModel.cs</code>、
+              <code>ISaveFileDialogService.cs</code>、<code>WpfSaveFileDialogService.cs</code></td>
+          <td>新增「📑 匯出 xlsm」按鈕（金色 <code>WarningBrush #D69830</code>）置於
+              「📊 匯出 Excel」左側；副作用：另存新檔對話框 filter 限定
+              <code>*.xlsm</code>，使用者無法輸入任意路徑覆寫系統位置以外的檔案。
+              「🖨 列印」改用 Info 灰藍 <code>#5A7290</code> 區分視覺層級。</td>
+        </tr>
+      </table>
+
+      <h3>6.8 v1.5 重掃驗證</h3>
+      <table>
+        <tr><th>驗證項目</th><th>結果</th></tr>
+        <tr><td><code>dotnet build Tender.slnx</code>（.NET 10）</td><td>0 errors / 0 warnings</td></tr>
+        <tr><td>單元測試（Core / Crawler / Storage）</td><td>86 + 58 + 25 = <strong>169 / 169 通過</strong>（v1.4: 160）</td></tr>
+        <tr><td>本機 vulnerable package audit（8 csproj）</td><td>0 known vulnerability（含 transitive）</td></tr>
+        <tr><td>XLSM 匯出端到端驗證</td><td>透過 <code>System.Reflection</code> 載入
+            <code>Tender.Desktop.dll</code>、Excel COM 開啟產出檔，3 個 sheet 結構正確、
+            4 個常見巨集（水利署／原住民族委員會／財團法人職業災害預防及重建中心／數位）執行後
+            autoFilter criteria 正確設定。</td></tr>
+        <tr><td>OOXML schema 合規</td><td><code>&lt;worksheet&gt;</code> 子元素順序
+            (sheetData → autoFilter → phoneticPr → hyperlinks → pageMargins → ...)、
+            凍結窗格 <code>topLeftCell</code>、row 2 不標記 hidden（避免巨集
+            <code>Cells.Find(LookIn:=xlValues)</code> 跳過）等 3 個 Excel 容錯細節皆已處理。</td></tr>
+      </table>
     </section>
 
     <!-- ================== 7. 待辦項目 ================== -->
