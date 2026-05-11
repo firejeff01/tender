@@ -472,7 +472,10 @@
         （全部資料 / 篩選 / 工作表1），保留 88 個關鍵字按鈕與 VBA 巨集功能。所有新增字串路徑沿用
         <code>SanitizeForExcel</code>（防 Formula Injection）並加 <code>EscapeXmlText</code>／
         <code>EscapeXmlAttr</code>（XML escape）；<strong>無新弱點</strong>。單元測試由 160 增至 169，
-        全綠。
+        全綠。同時順手修掉一個自 F-008 起就潛伏的長期 bug：
+        <code>GitHubUpdateChecker</code> 反序列化套錯
+        <code>PropertyNamingPolicy</code>（API 為 snake_case 但程式找 camelCase），
+        導致版內更新提示從未運作。詳見 6.7「長期 Bug 修補」與 6.9「Rollout 注意」。
       </p>
     </section>
 
@@ -1145,6 +1148,25 @@
               <code>*.xlsm</code>，使用者無法輸入任意路徑覆寫系統位置以外的檔案。
               「🖨 列印」改用 Info 灰藍 <code>#5A7290</code> 區分視覺層級。</td>
         </tr>
+        <tr>
+          <td>長期 Bug 修補</td>
+          <td>GitHubUpdateChecker JSON 命名失誤</td>
+          <td><code>src/Tender.Desktop/Services/GitHubUpdateChecker.cs</code>
+              （commit <code>6855da8</code>）</td>
+          <td>反序列化器原本套用 <code>JsonNamingPolicy.CamelCase</code>，但 GitHub REST API
+              使用 snake_case（<code>tag_name</code>、<code>html_url</code>、
+              <code>browser_download_url</code>），所有屬性反序列化成 null →
+              <code>release.TagName</code> 為空 → CheckAsync 永遠回傳
+              <code>IsUpdateAvailable=false</code>。<strong>從 F-008 加入 update checker 起就壞著
+              （v1.0 ～ v1.4 均受影響），版內提示功能從未實際運作。</strong>修法：
+              移除 PropertyNamingPolicy，於 <code>GitHubRelease</code> 與 <code>GitHubAsset</code>
+              record 各屬性顯式標註 <code>[JsonPropertyName("...")]</code>。實測修補後
+              CheckAsync 正確回傳 LatestVersion / DownloadUrl / ReleasePageUrl。
+              <strong>Rollout 注意：</strong>所有已安裝 v1.4.x 之 client 仍跑著有 bug 的
+              checker，需請使用者到
+              <code>https://github.com/firejeff01/tender/releases/latest</code>
+              手動下載並安裝一次新版 MSI；之後內建更新提示才會自動運作。</td>
+        </tr>
       </table>
 
       <h3>6.8 v1.5 重掃驗證</h3>
@@ -1161,7 +1183,35 @@
             (sheetData → autoFilter → phoneticPr → hyperlinks → pageMargins → ...)、
             凍結窗格 <code>topLeftCell</code>、row 2 不標記 hidden（避免巨集
             <code>Cells.Find(LookIn:=xlValues)</code> 跳過）等 3 個 Excel 容錯細節皆已處理。</td></tr>
+        <tr><td>GitHub Update Checker 端到端驗證</td><td>修補後透過
+            <code>System.Reflection</code> 載入新 build 的 <code>Tender.Desktop.dll</code>、
+            實體化 <code>GitHubUpdateChecker</code>、實際呼叫
+            <code>api.github.com</code>，正確回傳
+            <code>LatestVersion=1.4.15304.511</code>、<code>IsUpdateAvailable=True</code>、
+            並抓到 <code>BrowserDownloadUrl</code> 與 <code>HtmlUrl</code>。</td></tr>
       </table>
+
+      <h3>6.9 v1.5 Release / Rollout 注意</h3>
+      <p>
+        本次發版含一個自 F-008 起就潛伏的更新檢查 bug 修補（見 6.7「長期 Bug 修補」一列）。
+        基於 update checker 在舊版本就無法工作，<strong>已安裝 v1.0–v1.4 任一版本之 client
+        都不會自動跳出新版提示</strong>。
+        本輪需以「人工通知」方式請所有使用者：
+      </p>
+      <ol>
+        <li>到 <code>https://github.com/firejeff01/tender/releases/latest</code> 手動下載
+            <code>TenderSearch.msi</code>。</li>
+        <li>執行 MSI 直接覆蓋安裝；安裝會保留 <code>%LocalAppData%\TenderSearch\data\</code>
+            下的所有資料、設定、user-marks、saved-searches。</li>
+        <li>下次啟動 app 即會跑新的 <code>GitHubUpdateChecker</code>，往後新版會自動跳通知。</li>
+      </ol>
+      <p>
+        若公司資安政策要求對外連線白名單，本工具實際發出的 GitHub API endpoint 為
+        <code>https://api.github.com/repos/firejeff01/tender/releases/latest</code>，
+        以 <code>User-Agent: TenderSearch-UpdateChecker</code> 識別、
+        <code>AllowAutoRedirect=false</code>（見 F-007 修補）。可於設定頁將
+        <code>updateCheckEnabled</code> 關閉以完全停發此連線（仍可手動到 Releases 頁查版）。
+      </p>
     </section>
 
     <!-- ================== 7. 待辦項目 ================== -->
