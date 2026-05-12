@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Tender.Core.Constants;
@@ -16,6 +15,7 @@ public partial class AppSettingsViewModel : ObservableObject
     private readonly IAppSettingsRepository _repo;
     private readonly IScheduledTaskInstaller _taskInstaller;
     private readonly IDataPaths _paths;
+    private readonly IMigrateDataRootDialog _migrateDialog;
 
     [ObservableProperty]
     private string _scheduledTime = "17:00";
@@ -54,11 +54,13 @@ public partial class AppSettingsViewModel : ObservableObject
     public AppSettingsViewModel(
         IAppSettingsRepository repo,
         IScheduledTaskInstaller taskInstaller,
-        IDataPaths paths)
+        IDataPaths paths,
+        IMigrateDataRootDialog migrateDialog)
     {
         _repo = repo;
         _taskInstaller = taskInstaller;
         _paths = paths;
+        _migrateDialog = migrateDialog;
         // 列出所有支援的招標方式（從 TenderMethodMapping 取出名稱）
         foreach (var name in TenderMethodMapping.BusinessNameToOptionValue.Keys)
         {
@@ -173,13 +175,13 @@ public partial class AppSettingsViewModel : ObservableObject
 
             if (rootChanged)
             {
-                var migrate = AskMigrate(_initialDataRoot, newRoot);
-                if (migrate == MessageBoxResult.Cancel)
+                var choice = AskMigrate(_initialDataRoot, newRoot);
+                if (choice == MigrateChoice.Cancel)
                 {
                     StatusMessage = "已取消變更資料儲存位置";
                     return;
                 }
-                if (migrate == MessageBoxResult.Yes)
+                if (choice == MigrateChoice.Migrate)
                 {
                     try
                     {
@@ -213,19 +215,15 @@ public partial class AppSettingsViewModel : ObservableObject
 
     /// <summary>
     /// 詢問是否搬移舊 DataRoot 內容到新位置。
-    /// 舊位置不存在或空目錄時，直接回 No（不需搬移）。
+    /// 舊位置不存在或空目錄時，直接回 Keep（不需搬移、也不需詢問）。
     /// </summary>
-    private static MessageBoxResult AskMigrate(string oldRoot, string newRoot)
+    private MigrateChoice AskMigrate(string oldRoot, string newRoot)
     {
-        if (!Directory.Exists(oldRoot)) return MessageBoxResult.No;
+        if (!Directory.Exists(oldRoot)) return MigrateChoice.Keep;
         var hasContent = Directory.EnumerateFileSystemEntries(oldRoot).Any();
-        if (!hasContent) return MessageBoxResult.No;
+        if (!hasContent) return MigrateChoice.Keep;
 
-        return MessageBox.Show(
-            $"資料儲存位置將變更為：\n{newRoot}\n\n是否將現有資料從舊位置搬移過去？\n\n舊位置：{oldRoot}\n\n是 = 複製後刪除舊位置\n否 = 保留舊資料，新位置從零開始\n取消 = 不變更位置",
-            "資料搬移",
-            MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Question);
+        return _migrateDialog.Ask(oldRoot, newRoot);
     }
 
     private static bool IsNestedPath(string a, string b)

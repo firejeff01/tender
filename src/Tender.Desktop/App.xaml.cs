@@ -94,6 +94,7 @@ public partial class App : Application
         services.AddSingleton<IEsgXlsmExporter, EsgTemplateXlsmExporter>();
         services.AddSingleton<ISaveFileDialogService, WpfSaveFileDialogService>();
         services.AddSingleton<IErrorSummaryDialog, WpfErrorSummaryDialog>();
+        services.AddSingleton<IMigrateDataRootDialog, WpfMigrateDataRootDialog>();
         services.AddSingleton<IUpdateChecker, GitHubUpdateChecker>();
         services.AddSingleton<IDataCleanupService, DataCleanupService>();
         services.AddSingleton<INotificationService, NotificationService>();
