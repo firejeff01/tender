@@ -6,18 +6,36 @@ namespace Tender.Storage.Paths;
 /// </summary>
 public sealed class LocalAppDataPaths : IDataPaths
 {
-    public string DataRoot { get; }
+    private string _dataRoot;
+
+    public string DataRoot => _dataRoot;
+
+    public string DefaultDataRoot => GetDefaultDataRoot();
+
+    public event Action<string>? DataRootChanged;
 
     public LocalAppDataPaths()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TenderSearch",
-            "data"))
-    { }
+    {
+        _dataRoot = ReadBootstrapRoot() ?? GetDefaultDataRoot();
+    }
 
     public LocalAppDataPaths(string dataRoot)
     {
-        DataRoot = dataRoot;
+        _dataRoot = dataRoot;
+    }
+
+    public void ChangeRoot(string? newRoot)
+    {
+        var resolved = string.IsNullOrWhiteSpace(newRoot)
+            ? GetDefaultDataRoot()
+            : Path.GetFullPath(newRoot);
+
+        if (string.Equals(resolved, _dataRoot, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        WriteBootstrapRoot(resolved);
+        _dataRoot = resolved;
+        DataRootChanged?.Invoke(resolved);
     }
 
     public string DailyFolder(DateOnly date)
@@ -66,5 +84,43 @@ public sealed class LocalAppDataPaths : IDataPaths
 
         result.Sort();
         return result.AsReadOnly();
+    }
+
+    private static string GetDefaultDataRoot()
+        => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TenderSearch",
+            "data");
+
+    /// <summary>
+    /// bootstrap 設定檔位置：%LocalAppData%/TenderSearch/dataroot.txt
+    /// 必須放在 DataRoot 外，否則無法在啟動時得知該讀哪個 DataRoot。
+    /// </summary>
+    private static string GetBootstrapFile()
+        => Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TenderSearch",
+            "dataroot.txt");
+
+    private static string? ReadBootstrapRoot()
+    {
+        try
+        {
+            var path = GetBootstrapFile();
+            if (!File.Exists(path)) return null;
+            var content = File.ReadAllText(path).Trim();
+            return string.IsNullOrWhiteSpace(content) ? null : content;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void WriteBootstrapRoot(string root)
+    {
+        var path = GetBootstrapFile();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, root);
     }
 }

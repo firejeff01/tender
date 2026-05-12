@@ -35,4 +35,16 @@ public interface IDataPaths
 
     /// <summary>列出指定月份所有有資料的日期。</summary>
     IReadOnlyList<DateOnly> ListDaysWithData(int year, int month);
+
+    /// <summary>預設根目錄（%LocalAppData%/TenderSearch/data/）。供 UI 顯示「還原預設」用。</summary>
+    string DefaultDataRoot { get; }
+
+    /// <summary>
+    /// 變更 DataRoot 並持久化到 bootstrap 設定檔，所有依賴 IDataPaths 的 repository
+    /// 下次呼叫即會使用新路徑。傳入空字串或 null 視為還原預設。
+    /// </summary>
+    void ChangeRoot(string? newRoot);
+
+    /// <summary>DataRoot 變更後觸發，參數為新 root。訂閱者可重建 watcher 等資源。</summary>
+    event Action<string>? DataRootChanged;
 }

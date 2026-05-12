@@ -89,6 +89,25 @@ public partial class ShellViewModel : ObservableObject
         _appSettingsRepo = appSettingsRepo;
 
         _dataWatcher = TryStartDataWatcher();
+        _dataPaths.DataRootChanged += OnDataRootChanged;
+    }
+
+    private void OnDataRootChanged(string newRoot)
+    {
+        Application.Current?.Dispatcher.InvokeAsync(async () =>
+        {
+            try
+            {
+                _dataWatcher?.Dispose();
+                _dataWatcher = TryStartDataWatcher();
+                await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
+                await RefreshTodayCrawledAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // 重建 watcher / 重新整理失敗不影響主功能
+            }
+        });
     }
 
     private FileSystemWatcher? TryStartDataWatcher()
