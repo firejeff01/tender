@@ -116,6 +116,26 @@
                             BorderBrush="{StaticResource InfoBrush}"
                             Padding="12,5" Margin="0,0,8,0" />
 
+                    <!-- 匯出 ISMS xlsm：僅在「資安/無障礙」單獨勾選 ISMS、且「ESG/碳管理」皆未勾選時可點 -->
+                    <Button Content="🛡 匯出 ISMS xlsm"
+                            Command="{Binding CurrentDailyQueryVm.ExportIsmsXlsmCommand}"
+                            Visibility="{Binding IsDailyQueryVisible, Converter={StaticResource BoolToVis}}"
+                            Background="#3F6FA6"
+                            Foreground="{StaticResource TextOnPrimaryBrush}"
+                            BorderBrush="#2F5586"
+                            Padding="12,5" Margin="0,0,8,0"
+                            ToolTip="匯出 ISMS 標案範本（含 ISMS 專屬 VBA 巨集）&#x0a;條件：「資安/無障礙」群組單獨勾選 ISMS，且「ESG/碳管理」群組未勾選任何項目" />
+
+                    <!-- 匯出 ESG xlsm：僅在「ESG/碳管理」有勾選、且「資安/無障礙」皆未勾選時可點 -->
+                    <Button Content="🍃 匯出 ESG xlsm"
+                            Command="{Binding CurrentDailyQueryVm.ExportEsgXlsmCommand}"
+                            Visibility="{Binding IsDailyQueryVisible, Converter={StaticResource BoolToVis}}"
+                            Background="#5B8F5B"
+                            Foreground="{StaticResource TextOnPrimaryBrush}"
+                            BorderBrush="#3F6F3F"
+                            Padding="12,5" Margin="0,0,8,0"
+                            ToolTip="匯出 ESG 標案範本（含 ESG 專屬 VBA 巨集）&#x0a;條件：「ESG/碳管理」群組至少勾選一項，且「資安/無障礙」群組未勾選任何項目" />
+
                     <!-- 匯出 xlsm（含巨集模板）：只在查詢頁時顯示，置於匯出 Excel 左側 -->
                     <Button Content="📑 匯出 xlsm"
                             Command="{Binding CurrentDailyQueryVm.ExportXlsmCommand}"
