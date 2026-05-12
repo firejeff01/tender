@@ -204,8 +204,8 @@ public static class Program
 
             var dateStr = targetDate.ToString("yyyy/MM/dd");
             var diagUrl =
-                "https://web.pcc.gov.tw/prkms/tender/common/advanced/readTenderAdvanced" +
-                "?pageSize=5&firstSearch=true&searchType=advanced&isBinding=N&isLogIn=N" +
+                "https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic" +
+                "?pageSize=5&firstSearch=true&searchType=basic&isBinding=N&isLogIn=N" +
                 "&tenderType=TENDER_DECLARATION&tenderWay=TENDER_WAY_1" +
                 $"&dateType=isDate&tenderStartDate={Uri.EscapeDataString(dateStr)}" +
                 $"&tenderEndDate={Uri.EscapeDataString(dateStr)}";

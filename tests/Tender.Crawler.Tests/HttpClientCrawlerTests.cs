@@ -122,7 +122,7 @@ public sealed class HttpClientCrawlerTests
         await crawler.FetchAsync(targetDate, new[] { "公開招標" });
 
         capturedRequest.Should().NotBeNull();
-        capturedRequest!.RequestUri!.AbsoluteUri.Should().Contain("readTenderAdvanced");
+        capturedRequest!.RequestUri!.AbsoluteUri.Should().Contain("readTenderBasic");
     }
 
     // ---- 表單欄位驗證 ----

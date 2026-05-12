@@ -17,7 +17,9 @@ namespace Tender.Crawler.Spider;
 /// </summary>
 public sealed class HttpClientCrawler : ICrawler
 {
-    private const string BaseUrl = "https://web.pcc.gov.tw/prkms/tender/common/advanced/readTenderAdvanced";
+    // 使用 basic 端點與政府電子採購網 UI 一致：advanced 會少列「未來日公告日的更正公告」，
+    // basic 則完整列出當日查詢條件下網站所顯示的所有筆數。
+    private const string BaseUrl = "https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic";
     // 使用簡單 UA 避免觸發政府網站防爬機制
     // PoC 驗證：複雜的 Chrome UA 會導致伺服器等待，簡單 UA 可在 < 1 秒內得到回應
     private const string UserAgentString = "TenderSearch/1.0";
@@ -119,7 +121,7 @@ public sealed class HttpClientCrawler : ICrawler
         {
             ["pageSize"]        = PageSize.ToString(),
             ["firstSearch"]     = "true",
-            ["searchType"]      = "advanced",
+            ["searchType"]      = "basic",
             ["isBinding"]       = "N",
             ["isLogIn"]         = "N",
             ["tenderType"]      = "TENDER_DECLARATION",

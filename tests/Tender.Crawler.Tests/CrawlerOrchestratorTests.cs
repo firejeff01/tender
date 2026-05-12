@@ -78,7 +78,6 @@ public sealed class CrawlerOrchestratorTests : IDisposable
             _clockMock.Object,
             _progressMock.Object,
             _keywordsRepo,
-            _dateConverter,
             _settingsRepo);
     }
 
@@ -491,7 +490,6 @@ public sealed class CrawlerOrchestratorTests : IDisposable
             _clockMock.Object,
             _progressMock.Object,
             _keywordsRepo,
-            _dateConverter,
             _settingsRepo);
 
         var run = await orchestrator.RunAsync(new CrawlerArgs { Mode = CrawlerMode.Scheduled, TargetDate = targetDate });

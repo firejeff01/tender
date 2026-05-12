@@ -1,5 +1,4 @@
 using Tender.Core.Clock;
-using Tender.Core.DateConversion;
 using Tender.Core.Exceptions;
 using Tender.Core.Keywords;
 using Tender.Core.Models;
@@ -29,7 +28,6 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
     private readonly IClock _clock;
     private readonly IProgressReporter _progress;
     private readonly IKeywordsRepository _keywordsRepo;
-    private readonly ITaiwanDateConverter _dateConverter;
     private readonly IAppSettingsRepository _settingsRepo;
 
     // 萬一 AppSettings 載入失敗使用此 fallback
@@ -52,7 +50,6 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
         IClock clock,
         IProgressReporter progress,
         IKeywordsRepository keywordsRepo,
-        ITaiwanDateConverter dateConverter,
         IAppSettingsRepository settingsRepo)
     {
         _crawler = crawler;
@@ -66,7 +63,6 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
         _clock = clock;
         _progress = progress;
         _keywordsRepo = keywordsRepo;
-        _dateConverter = dateConverter;
         _settingsRepo = settingsRepo;
     }
 
@@ -180,21 +176,6 @@ public sealed class CrawlerOrchestrator : ICrawlerOrchestrator
                         $"ParseException on page {ex.PageNumber}: {ex.Message}",
                         ex, ex.PageNumber, ct);
                 }
-            }
-
-            // ---- Step 2.5: Filter by announcement date ----
-            // 政府電子採購網的查詢結果偶爾會夾帶非當日（如預告未來日）的標案，
-            // 在此防呆：只保留 announcementDate 與 targetDate（民國）一致的 row。
-            var rocDate = _dateConverter.DateOnlyToRoc(targetDate);
-            var beforeFilter = allItems.Count;
-            allItems = allItems.Where(i => i.AnnouncementDate == rocDate).ToList();
-            var droppedCount = beforeFilter - allItems.Count;
-            if (droppedCount > 0)
-            {
-                Console.Error.WriteLine($"[Orchestrator] Dropped {droppedCount} item(s) with announcementDate != {rocDate}");
-                await SafeAppendErrorLogAsync(targetDate, runId, "warning",
-                    $"Dropped {droppedCount} item(s) with mismatched announcement date (expected {rocDate})",
-                    null, null, ct);
             }
 
             // ---- Step 3: Annotate Keywords ----
