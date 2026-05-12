@@ -17,3 +17,15 @@ public interface IXlsmExporter
         string savePath,
         CancellationToken ct = default);
 }
+
+/// <summary>
+/// 以「ISMS 標案」範本為基底匯出（兩個工作表「全部資料」、「篩選」），保留 ISMS 專屬 VBA 巨集。
+/// 僅在「資安/無障礙」群組單獨勾選 ISMS、且「ESG/碳管理」群組無勾選時才允許執行。
+/// </summary>
+public interface IIsmsXlsmExporter : IXlsmExporter { }
+
+/// <summary>
+/// 以「ESG 標案」範本為基底匯出（兩個工作表「全部資料」、「篩選」），保留 ESG 專屬 VBA 巨集。
+/// 僅在「ESG/碳管理」群組至少勾一項、且「資安/無障礙」群組無勾選時才允許執行。
+/// </summary>
+public interface IEsgXlsmExporter : IXlsmExporter { }

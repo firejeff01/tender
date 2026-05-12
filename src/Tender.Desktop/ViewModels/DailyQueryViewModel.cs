@@ -18,6 +18,8 @@ public partial class DailyQueryViewModel : ObservableObject
     private readonly IClock _clock;
     private readonly IExcelExporter _excelExporter;
     private readonly IXlsmExporter _xlsmExporter;
+    private readonly IIsmsXlsmExporter _ismsXlsmExporter;
+    private readonly IEsgXlsmExporter _esgXlsmExporter;
     private readonly ISaveFileDialogService _saveDialog;
     private readonly IUserMarksRepository _userMarksRepo;
     private readonly ISavedSearchesRepository _savedSearchesRepo;
@@ -123,6 +125,8 @@ public partial class DailyQueryViewModel : ObservableObject
         IClock clock,
         IExcelExporter excelExporter,
         IXlsmExporter xlsmExporter,
+        IIsmsXlsmExporter ismsXlsmExporter,
+        IEsgXlsmExporter esgXlsmExporter,
         ISaveFileDialogService saveDialog,
         IUserMarksRepository userMarksRepo,
         ISavedSearchesRepository savedSearchesRepo)
@@ -134,6 +138,8 @@ public partial class DailyQueryViewModel : ObservableObject
         _clock = clock;
         _excelExporter = excelExporter;
         _xlsmExporter = xlsmExporter;
+        _ismsXlsmExporter = ismsXlsmExporter;
+        _esgXlsmExporter = esgXlsmExporter;
         _saveDialog = saveDialog;
         _userMarksRepo = userMarksRepo;
         _savedSearchesRepo = savedSearchesRepo;
@@ -539,6 +545,86 @@ public partial class DailyQueryViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// 是否可匯出 ISMS xlsm：「資安/無障礙」群組只勾選 ISMS、且「ESG/碳管理」群組未勾選任何項目。
+    /// 由 ApplyFilter / OnAnyButtonToggled 觸發 OnPropertyChanged，連動 RelayCommand 的 CanExecuteChanged。
+    /// </summary>
+    public bool CanExportIsmsXlsm =>
+        IsSoleSelection(SecurityGroupName, "ISMS") && IsGroupEmpty(EsgGroupName);
+
+    /// <summary>
+    /// 是否可匯出 ESG xlsm：「ESG/碳管理」群組至少勾一項、且「資安/無障礙」群組未勾選任何項目。
+    /// </summary>
+    public bool CanExportEsgXlsm =>
+        HasAnySelected(EsgGroupName) && IsGroupEmpty(SecurityGroupName);
+
+    private const string SecurityGroupName = "資安/無障礙";
+    private const string EsgGroupName = "ESG/碳管理";
+
+    private bool IsGroupEmpty(string groupName)
+    {
+        var group = KeywordGroups.FirstOrDefault(g => g.Name == groupName);
+        return group is null || !group.Buttons.Any(b => b.IsActive);
+    }
+
+    private bool HasAnySelected(string groupName)
+    {
+        var group = KeywordGroups.FirstOrDefault(g => g.Name == groupName);
+        return group is not null && group.Buttons.Any(b => b.IsActive);
+    }
+
+    private bool IsSoleSelection(string groupName, string keyword)
+    {
+        var group = KeywordGroups.FirstOrDefault(g => g.Name == groupName);
+        if (group is null) return false;
+        var actives = group.Buttons.Where(b => b.IsActive).Select(b => b.Keyword).ToList();
+        return actives.Count == 1 && actives[0] == keyword;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExportIsmsXlsm))]
+    private async Task ExportIsmsXlsmAsync(CancellationToken ct)
+    {
+        await ExportTemplateXlsmAsync(_ismsXlsmExporter, "ISMS", ct);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExportEsgXlsm))]
+    private async Task ExportEsgXlsmAsync(CancellationToken ct)
+    {
+        await ExportTemplateXlsmAsync(_esgXlsmExporter, "ESG", ct);
+    }
+
+    private async Task ExportTemplateXlsmAsync(IXlsmExporter exporter, string tag, CancellationToken ct)
+    {
+        if (AllItems.Count == 0)
+        {
+            ErrorMessage = "目前沒有可匯出的資料";
+            return;
+        }
+
+        var suggested = IsRangeMode
+            ? $"{tag}標案_{Date:yyyyMMdd}~{DateTo!.Value:yyyyMMdd}.xlsm"
+            : $"{tag}標案_{Date:yyyyMMdd}.xlsm";
+        var savePath = _saveDialog.ShowSaveAsXlsm(suggested);
+        if (string.IsNullOrEmpty(savePath)) return;
+
+        try
+        {
+            IsLoading = true;
+            var allRaw      = AllItems.Select(vm => vm.Item).ToList().AsReadOnly();
+            var filteredRaw = FilteredItems.Select(vm => vm.Item).ToList().AsReadOnly();
+            await exporter.ExportAsync(allRaw, filteredRaw, savePath, ct);
+            ErrorMessage = $"已匯出 {tag}（全部 {AllItems.Count} / 篩選 {FilteredItems.Count} 筆，含巨集）→ {savePath}";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"匯出失敗：{ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     partial void OnKeywordQueryChanged(string? value) => ApplyFilter();
     partial void OnKeywordTitleOnlyChanged(bool value) => ApplyFilter();
     partial void OnKeywordExcludeChanged(bool value) => ApplyFilter();
@@ -640,5 +726,11 @@ public partial class DailyQueryViewModel : ObservableObject
             .AsReadOnly();
 
         FilteredItems = filtered;
+
+        // 關鍵字群組勾選改變會走 ApplyFilter，順便通知兩個匯出按鈕的 CanExecute
+        OnPropertyChanged(nameof(CanExportIsmsXlsm));
+        OnPropertyChanged(nameof(CanExportEsgXlsm));
+        ExportIsmsXlsmCommand.NotifyCanExecuteChanged();
+        ExportEsgXlsmCommand.NotifyCanExecuteChanged();
     }
 }
