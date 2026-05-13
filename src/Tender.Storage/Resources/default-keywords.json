@@ -49,8 +49,14 @@
         { "keyword": "ESG", "targetField": "tenderName", "enabled": true },
         { "keyword": "永續", "targetField": "tenderName", "enabled": true },
         { "keyword": "淨零", "targetField": "tenderName", "enabled": true },
+        { "keyword": "低碳", "targetField": "tenderName", "enabled": true },
         { "keyword": "碳排", "targetField": "tenderName", "enabled": true },
-        { "keyword": "碳盤查", "targetField": "tenderName", "enabled": true }
+        { "keyword": "碳盤", "targetField": "tenderName", "enabled": true },
+        { "keyword": "碳足跡", "targetField": "tenderName", "enabled": true },
+        { "keyword": "碳管理", "targetField": "tenderName", "enabled": true },
+        { "keyword": "溫室氣體", "targetField": "tenderName", "enabled": true },
+        { "keyword": "顧問輔導", "targetField": "tenderName", "enabled": true },
+        { "keyword": "巡檢", "targetField": "tenderName", "enabled": true }
       ]
     },
     {
