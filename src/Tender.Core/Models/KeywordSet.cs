@@ -14,6 +14,10 @@ public sealed record KeywordGroup
     [JsonPropertyName("name")]
     public required string Name { get; init; }
 
+    /// <summary>群組強調色（hex string，含 #）。空字串代表沿用預設色盤（由 Repository 載入時 fallback 補上）。</summary>
+    [JsonPropertyName("color")]
+    public string Color { get; init; } = string.Empty;
+
     [JsonPropertyName("items")]
     public required IReadOnlyList<KeywordItem> Items { get; init; }
 }

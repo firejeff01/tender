@@ -1,6 +1,7 @@
 <Window x:Class="Tender.Desktop.Views.AppSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        AutomationProperties.AutomationId="AppSettingsWindow"
         Title="應用設定"
         Height="780" Width="540"
         WindowStartupLocation="CenterOwner"
@@ -26,8 +27,10 @@
                 <TextBlock DockPanel.Dock="Left" Text="{Binding StatusMessage}"
                            VerticalAlignment="Center" Foreground="{StaticResource TextSecondaryBrush}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="關閉" Padding="22,5" Margin="0,0,8,0" IsCancel="True" Click="Close_Click" />
-                    <Button Content="💾 儲存" Command="{Binding SaveCommand}"
+                    <Button Content="關閉" AutomationProperties.AutomationId="CloseButton"
+                            Padding="22,5" Margin="0,0,8,0" IsCancel="True" Click="Close_Click" />
+                    <Button Content="💾 儲存" AutomationProperties.AutomationId="SaveButton"
+                            Command="{Binding SaveCommand}"
                             Style="{StaticResource PrimaryButtonStyle}" Padding="22,5" />
                 </StackPanel>
             </DockPanel>

@@ -24,13 +24,6 @@ public partial class DailyQueryViewModel : ObservableObject
     private readonly IUserMarksRepository _userMarksRepo;
     private readonly ISavedSearchesRepository _savedSearchesRepo;
 
-    /// <summary>群組顯示色（暖色系，依出現順序循環）。</summary>
-    private static readonly string[] GroupAccentColors =
-    {
-        "#8B6F47", "#9C5A8C", "#A0524D", "#7A8B5C", "#C4823C",
-        "#5B7C8C", "#8B5A3C", "#6B8E6B", "#A5664E",
-    };
-
     /// <summary>記憶體中的 user-marks 表（sourcePk → UserMark），由 LoadAsync 填入。</summary>
     private Dictionary<string, UserMark> _userMarks = new();
 
@@ -253,17 +246,19 @@ public partial class DailyQueryViewModel : ObservableObject
             if (KeywordGroups.Count == 0)
             {
                 var keywordSet = await _keywordsRepo.LoadAsync(ct);
-                int colorIdx = 0;
+                int fallbackIdx = 0;
                 foreach (var group in keywordSet.Groups)
                 {
                     var keywords = group.Items
                         .Where(k => k.Enabled)
                         .Select(k => k.Keyword);
-                    var color = GroupAccentColors[colorIdx % GroupAccentColors.Length];
+                    var color = string.IsNullOrWhiteSpace(group.Color)
+                        ? KeywordGroupColors.GetByIndex(fallbackIdx)
+                        : group.Color;
                     var groupVm = new KeywordGroupViewModel(group.Name, color, keywords);
                     groupVm.AnyButtonToggled += ApplyFilter;
                     KeywordGroups.Add(groupVm);
-                    colorIdx++;
+                    fallbackIdx++;
                 }
             }
 

@@ -11,5 +11,7 @@
     <Project Path="tests/Tender.Core.Tests/Tender.Core.Tests.csproj" />
     <Project Path="tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj" />
     <Project Path="tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj" />
+    <Project Path="tests/Tender.Desktop.Tests/Tender.Desktop.Tests.csproj" />
+    <Project Path="tests/Tender.Desktop.UiTests/Tender.Desktop.UiTests.csproj" />
   </Folder>
 </Solution>

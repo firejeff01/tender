@@ -374,12 +374,12 @@
       <dl class="meta">
         <div><dt>產品名稱</dt><dd>TenderSearch</dd></div>
         <div><dt>分類</dt><dd>內部桌面工具（Windows）</dd></div>
-        <div><dt>報告日期</dt><dd>2026-05-11（v1.5 業務功能增量 + 重掃）</dd></div>
-        <div><dt>報告版本</dt><dd>1.5</dd></div>
+        <div><dt>報告日期</dt><dd>2026-05-13（v1.6 業務功能增量 + 重掃）</dd></div>
+        <div><dt>報告版本</dt><dd>1.6</dd></div>
         <div><dt>執行環境</dt><dd>.NET 10 LTS（支援至 2028-11）</dd></div>
         <div><dt>單元測試覆蓋</dt><dd>169 / 169 通過</dd></div>
-        <div><dt>套件 audit 結果</dt><dd>0 known vuln</dd></div>
-        <div><dt>分支</dt><dd>main（v1.5 已合併）</dd></div>
+        <div><dt>套件 audit 結果</dt><dd>0 known vuln（8 csproj 全綠）</dd></div>
+        <div><dt>分支</dt><dd>main（v1.6 已合併，HEAD 2e8d0d7）</dd></div>
       </dl>
     </header>
 
@@ -422,7 +422,7 @@
         </div>
         <div class="stat">
           <div class="label">已修弱點</div>
-          <div class="value">7 / 9</div>
+          <div class="value">8 / 10</div>
         </div>
         <div class="stat">
           <div class="label">待辦弱點</div>
@@ -476,6 +476,41 @@
         <code>GitHubUpdateChecker</code> 反序列化套錯
         <code>PropertyNamingPolicy</code>（API 為 snake_case 但程式找 camelCase），
         導致版內更新提示從未運作。詳見 6.7「長期 Bug 修補」與 6.9「Rollout 注意」。
+      </p>
+      <p>
+        <strong>v1.6 補充：</strong>五項業務功能增量已從 dev 合併至 main（commit
+        <code>d4fcc7b Merge branch 'dev'</code> + 後續 5 個直接 commit，HEAD <code>2e8d0d7</code>）：(a)
+        <strong>新增 ISMS / ESG 雙範本 xlsm 匯出</strong>——抽出
+        <code>ProfiledTemplateXlsmExporter</code> 共用核心，
+        <code>XlsmTemplateProfile.Isms</code> 與 <code>XlsmTemplateProfile.Esg</code>
+        兩個 profile 各自封裝範本路徑、cellXfs 樣式索引、worksheet rel id；
+        新增 <code>IIsmsXlsmExporter</code> / <code>IEsgXlsmExporter</code> 兩個介面 + DI 註冊 +
+        兩顆新按鈕（🛡 ISMS 鋼藍 <code>#3F6FA6</code> / 🍃 ESG 草綠 <code>#5B8F5B</code>），
+        按鈕 CanExecute 採互斥條件（「資安/無障礙」群組單獨勾 ISMS、ESG 群組未勾選，反之亦然），
+        避免使用者在勾錯關鍵字組合時匯出錯誤範本；(b)
+        <strong>資料儲存位置可由使用者變更</strong>——
+        <code>IDataPaths</code> 加入 <code>ChangeRoot()</code> +
+        <code>DataRootChanged</code> 事件，<code>LocalAppDataPaths</code> 透過
+        <code>%LocalAppData%/TenderSearch/dataroot.txt</code> bootstrap 檔持久化新路徑；
+        設定頁加「資料儲存位置」TextBox + 瀏覽資料夾 + 還原預設按鈕；
+        儲存時若位置變更，跳出三向對話框 <code>MigrateDataRootDialog</code>
+        （搬移到新位置 / 保留舊資料 / 取消），<code>ShellViewModel</code> 在
+        <code>DataRootChanged</code> 觸發後自動重建 <code>FileSystemWatcher</code> 與行事曆；(c)
+        <strong>爬蟲端點切回 basic</strong>——
+        <code>HttpClientCrawler.BaseUrl</code> 由 <code>readTenderAdvanced</code> 改為
+        <code>readTenderBasic</code>、<code>searchType=basic</code>，並
+        <strong>移除 <code>CrawlerOrchestrator</code> Step 2.5「公告日不一致則丟棄」濾鏡</strong>，
+        使結果筆數完全對齊政府電子採購網 UI（兩端均不再以公告日篩選）；(d)
+        <strong>ESG 預設關鍵字擴充</strong>——
+        <code>default-keywords.json</code> 內 ESG/碳管理群組由 5 個詞擴充至 12 個
+        （新增：低碳、碳盤、碳足跡、碳管理、溫室氣體、顧問輔導、巡檢）；(e)
+        <strong>篩選 UI 文案微調</strong>——
+        <code>DailyQueryView.xaml</code> 中「標題」CheckBox label 改為「標案名稱」，
+        ToolTip 同步更新。所有新增程式碼路徑沿用既有
+        <code>SanitizeForExcel</code> + <code>EscapeXmlText</code> / <code>EscapeXmlAttr</code> 防護；
+        <strong>未引入新弱點</strong>，但發現一項 Info 等級的版控清潔項目
+        （Excel 鎖檔 <code>~$*.xlsm</code> 進 git，詳見新增 F-010）。
+        單元測試維持 169 / 169 全綠；本機 vulnerable package audit 8 個 csproj 全綠。
       </p>
     </section>
 
@@ -704,8 +739,8 @@
         </tr>
         <tr>
           <td><span class="badge sev-info">Info</span></td>
-          <td class="center">2</td><td class="center">1</td><td class="center">1</td>
-          <td>已加更新檢查 toggle；套件版本監控持續進行</td>
+          <td class="center">3</td><td class="center">2</td><td class="center">1</td>
+          <td>已加更新檢查 toggle、Excel 鎖檔 .gitignore 修補；套件版本監控持續進行</td>
         </tr>
       </table>
 
@@ -897,6 +932,33 @@
           下次 LTS 升級評估期約於 2028 年第 2 季。
         </p>
         <p><strong>建議：</strong>每季執行一次 <code>dotnet list package --outdated --vulnerable</code>。</p>
+      </div>
+
+      <!-- F-010（v1.6 新增） -->
+      <div class="finding pending">
+        <div class="finding-head">
+          <span class="id">F-010</span>
+          <h3>Excel 鎖檔（<code>~$*.xlsm</code>）誤入版控</h3>
+          <span class="badge sev-info">Info</span>
+          <span class="badge status-pending">Pending</span>
+        </div>
+        <div class="meta-row">
+          類別：版控清潔 ／ 位置：<code>pm/~$1150511_ESG標案.xlsm</code>、<code>.gitignore</code>
+        </div>
+        <p>
+          v1.6 commit <code>c3adef9 Modify ESG Filter</code> 內含一個 Microsoft Office 在開啟
+          <code>1150511_ESG標案.xlsm</code> 時自動產生的鎖檔
+          <code>~$1150511_ESG標案.xlsm</code>（165 bytes），目前已進入 git tree。
+          內容為使用者名稱 + 機器名稱（Office Owner Block），<strong>並非機密</strong>，
+          但會在下次 PM 編輯範本時持續產生新差異干擾 diff。
+          現行 <code>.gitignore</code> 未涵蓋 <code>~$*</code> pattern。
+        </p>
+        <p>
+          <strong>建議：</strong>1) 在 <code>.gitignore</code> 加入
+          <code>~$*</code> 一行；2) 以 <code>git rm --cached "pm/~$1150511_ESG標案.xlsm"</code>
+          將既有鎖檔自版控移除（檔案在 PM 機器仍存在於本機，不影響工作流）。
+          <strong>無資安影響</strong>，列為 Info 以便下次維護順手清掉。
+        </p>
       </div>
 
     </section>
@@ -1212,6 +1274,213 @@
         <code>AllowAutoRedirect=false</code>（見 F-007 修補）。可於設定頁將
         <code>updateCheckEnabled</code> 關閉以完全停發此連線（仍可手動到 Releases 頁查版）。
       </p>
+
+      <h3>6.10 v1.6 增量功能與安全審查</h3>
+      <p>
+        v1.6 共 5 個業務功能群組從 dev 合併至 main（涵蓋 commit
+        <code>a827f8c</code>、<code>6432a2f</code>、<code>5bba11e</code>、
+        <code>3cfd38c</code>、<code>c3adef9</code>、<code>2e8d0d7</code>，
+        合計 8 個 source 檔案 + 2 個範本檔變動）。所有新增程式碼皆經獨立安全審查，
+        <strong>未引入新弱點</strong>。下表為對應變動：
+      </p>
+      <table>
+        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+
+        <tr>
+          <td rowspan="2">範本匯出擴充<br>（ISMS / ESG）</td>
+          <td>共用核心 <code>ProfiledTemplateXlsmExporter</code> + 兩個 profile</td>
+          <td>
+            <code>Services/ProfiledTemplateXlsmExporter.cs</code>（新，332 行）、
+            <code>Services/XlsmTemplateProfile.cs</code>（新，142 行）、
+            <code>Services/IXlsmExporter.cs</code>（+12 行新增子介面）、
+            <code>Templates/tender-template-isms.xlsm</code>（5.85 MB）、
+            <code>Templates/tender-template-esg.xlsm</code>（6.10 MB）
+          </td>
+          <td>沿用 v1.5 <code>TemplateXlsmExporter</code> 的安全規則：模板複製 +
+              <code>System.IO.Compression.ZipArchive</code> 重寫 sheet1 / sheet2 xml 與
+              <code>_rels</code>；不解析、不執行 VBA；<code>inlineStr</code> 避免動
+              sharedStrings.xml；<strong>所有自由文字欄位</strong>（標案名稱、案號、機關名稱、
+              招標方式、採購性質、日期）一律經 <code>SanitizeForExcel</code>（防 Formula
+              Injection，OWASP 規則）+ <code>EscapeXmlText</code>（控制字元濾除 + 5 大實體 escape）；
+              hyperlink URL 與 rels Target 經 <code>EscapeXmlAttr</code>（含 quote / apostrophe）。
+              Profile 內所有 <code>cellXfs</code> 索引、<code>rel id</code>、<code>codeName</code>
+              皆為常數，不接收外部輸入。</td>
+        </tr>
+        <tr>
+          <td>UI 接線與互斥 CanExecute</td>
+          <td>
+            <code>Views/ShellWindow.xaml</code>（+20 行兩顆按鈕）、
+            <code>ViewModels/DailyQueryViewModel.cs</code>（+92 行命令 + CanExecute）、
+            <code>App.xaml.cs</code>（+2 行 DI 註冊）
+          </td>
+          <td><code>CanExportIsmsXlsm</code> / <code>CanExportEsgXlsm</code> 純記憶體內
+              LINQ 條件式（檢查 <code>KeywordGroups</code> 內按鈕的 <code>IsActive</code> 計數），
+              無外部資料輸入；<code>ApplyFilter</code> 結尾顯式呼叫
+              <code>NotifyCanExecuteChanged()</code> 同步按鈕灰階狀態。
+              另存新檔仍經 <code>ISaveFileDialogService.ShowSaveAsXlsm</code> 限定
+              <code>*.xlsm</code> filter，與 v1.5 行為一致。
+              <strong>巨集未數位簽章</strong> 行為與 v1.5 模板相同——Excel 開檔仍跳「啟用內容」警告，
+              與直接打開 PM 原始 <code>1150511_ISMS/ESG標案.xlsm</code> 行為一致。</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2">資料儲存位置變更</td>
+          <td><code>IDataPaths.ChangeRoot()</code> + bootstrap 檔</td>
+          <td>
+            <code>Storage/Paths/IDataPaths.cs</code>（+12 行 API）、
+            <code>Storage/Paths/LocalAppDataPaths.cs</code>（+70 行實作 + bootstrap）
+          </td>
+          <td>新 root 一律經 <code>Path.GetFullPath()</code> 正規化（消除 <code>..</code>、
+              <code>~</code>、相對路徑）；bootstrap 檔位置為硬編
+              <code>%LocalAppData%/TenderSearch/dataroot.txt</code>（必須放在 DataRoot 外，
+              否則啟動時無法得知該讀哪個 root），純 <code>File.ReadAllText</code> /
+              <code>File.WriteAllText</code> 無反序列化、無格式解析。
+              I/O 失敗（讀檔被鎖、無寫入權限）皆有 <code>try/catch</code> 包覆，
+              失敗 fallback 為預設 root，<strong>不會 crash 主程式</strong>。</td>
+        </tr>
+        <tr>
+          <td>UI / 搬移流程 / 互斥對話框</td>
+          <td>
+            <code>ViewModels/AppSettingsViewModel.cs</code>（+128 行 BrowseDataRoot
+            / ResetDataRoot / SaveAsync 改寫 / IsNestedPath / MigrateDirectory）、
+            <code>ViewModels/ShellViewModel.cs</code>（+19 行 OnDataRootChanged
+            重建 watcher）、<code>Views/AppSettingsWindow.xaml</code>（+32 行 TextBox + 兩顆按鈕）、
+            <code>Services/IMigrateDataRootDialog.cs</code>（新，14 行）、
+            <code>Services/WpfMigrateDataRootDialog.cs</code>（新，19 行）、
+            <code>Views/MigrateDataRootDialog.xaml(.cs)</code>（新，98 + 41 行）、
+            <code>App.xaml.cs</code>（+1 行 DI 註冊）
+          </td>
+          <td>瀏覽資料夾使用 <code>Microsoft.Win32.OpenFolderDialog</code>
+              （UseShellExecute 不適用、無 URL handler 介入）；
+              儲存前 <code>IsNestedPath</code> 雙向比對阻擋新舊路徑互為子目錄的搬移；
+              搬移採 <code>Directory.GetFiles(SearchOption.AllDirectories)</code> +
+              <code>Path.GetRelativePath</code> 重組目的端絕對路徑，
+              <strong>避免 path traversal</strong>；
+              <code>MigrateDataRootDialog</code> 三向選項
+              （<code>Cancel</code> / <code>Keep</code> / <code>Migrate</code>）為 enum，
+              非任意字串。<strong>限制：</strong>不阻擋使用者將 root 指向系統目錄
+              （C:\Windows、Program Files），但因該動作仍以使用者層級權限執行，
+              寫入失敗會被 NTFS ACL 阻擋並彈出 StatusMessage；無資安風險，僅為使用者體驗考量。
+              對話框 enum 為強型別 <code>MigrateChoice</code>，無 string-typed control flow。</td>
+        </tr>
+
+        <tr>
+          <td rowspan="2">爬蟲端點切換</td>
+          <td>HttpClientCrawler 改 basic 端點</td>
+          <td>
+            <code>src/Tender.Crawler/Spider/HttpClientCrawler.cs</code>（BaseUrl 與 searchType 各 1 行）、
+            <code>src/Tender.Crawler/Program.cs</code>（診斷模式 URL 同步切換）
+          </td>
+          <td>BaseUrl 由 <code>readTenderAdvanced</code> 改為
+              <code>readTenderBasic</code>，仍走 HTTPS、仍指向
+              <code>web.pcc.gov.tw</code>，<strong>外連白名單未變</strong>、
+              <code>WhitelistedRedirectHandler</code>（F-007）仍生效；
+              所有查詢字串值均為列舉常數或 <code>DateOnly</code> 強型別格式化，
+              <strong>無使用者字串注入空間</strong>。</td>
+        </tr>
+        <tr>
+          <td>移除 Step 2.5「公告日不一致則丟棄」濾鏡</td>
+          <td>
+            <code>src/Tender.Crawler/Application/CrawlerOrchestrator.cs</code>（−21 行 + 移除
+            <code>ITaiwanDateConverter</code> 注入）、
+            <code>tests/Tender.Crawler.Tests/CrawlerOrchestratorTests.cs</code>（−2 行注入參數調整）
+          </td>
+          <td>移除的是「資料策略」，非「資料淨化」——濾鏡原意是丟掉非當日公告，
+              而 basic 端點本身已對齊 PCC UI 的公告日；保留會反而少列「未來日公告日更正公告」
+              等 UI 顯示的合法 row。<strong>不影響反序列化、輸入驗證、外連白名單等資安面向</strong>；
+              <code>SafeAppendErrorLogAsync</code> 寫入路徑亦不再多接受一個外部字串。
+              對應單元測試已調整，58 / 58 通過。</td>
+        </tr>
+
+        <tr>
+          <td>預設關鍵字資料</td>
+          <td>ESG 群組 +7 詞</td>
+          <td>
+            <code>src/Tender.Storage/Resources/default-keywords.json</code>（+7 行）
+          </td>
+          <td>純嵌入式資源 JSON，由 <code>System.Text.Json</code> 嚴格反序列化
+              （與 v1.0 起一致）；新增 7 個字串無控制字元、無正則
+              metachar 風險（關鍵字命中為 <code>String.Contains</code>，非 regex）。
+              既有使用者升級後若已有 <code>%LocalAppData%/.../settings/keywords.json</code>，
+              <strong>不會被覆蓋</strong>（沿用 <code>KeywordsRepository</code>
+              first-run-only 邏輯）；想取得新詞需到「管理關鍵字」手動新增或「還原預設」。</td>
+        </tr>
+
+        <tr>
+          <td>UI 文案</td>
+          <td>「標題」CheckBox 改稱「標案名稱」</td>
+          <td>
+            <code>src/Tender.Desktop/Views/DailyQueryView.xaml</code>（2 行 label + ToolTip）
+          </td>
+          <td>純可視文字變更，無 binding 變更、無新欄位、無 Logger / Telemetry。</td>
+        </tr>
+
+        <tr>
+          <td>版控清潔</td>
+          <td>Excel 鎖檔誤入 git（詳見 F-010）</td>
+          <td>
+            <code>pm/~$1150511_ESG標案.xlsm</code>（165 bytes）、
+            <code>.gitignore</code>（建議補 <code>~$*</code> pattern）
+          </td>
+          <td>Office Owner Block 含使用者名稱與機器名稱，
+              <strong>非機密 / 非敏感資料</strong>；為下游 PM 編輯時避免持續干擾 diff
+              建議補 <code>.gitignore</code>。Info 等級，無資安影響。</td>
+        </tr>
+      </table>
+
+      <h3>6.11 v1.6 重掃驗證</h3>
+      <table>
+        <tr><th>驗證項目</th><th>結果</th></tr>
+        <tr><td><code>dotnet build Tender.slnx -c Release</code>（.NET 10）</td><td>0 errors / 0 warnings（13.79 秒）</td></tr>
+        <tr><td>Tender.Core.Tests</td><td>✅ 86 / 86 通過（363 ms）</td></tr>
+        <tr><td>Tender.Crawler.Tests</td><td>✅ 58 / 58 通過（4 s，含端點切換與移除 Step 2.5 的調整）</td></tr>
+        <tr><td>Tender.Storage.Tests</td><td>✅ 25 / 25 通過（235 ms）</td></tr>
+        <tr><td>單元測試總計</td><td><strong>169 / 169 通過</strong>（與 v1.5 相同；v1.6 未新增測試，因為新增功能多為 UI 整合 / DI 接線 / 範本資源變動）</td></tr>
+        <tr><td>本機 vulnerable package audit（8 csproj）</td><td>0 known vulnerability（含 transitive）</td></tr>
+        <tr><td>新增程式碼路徑 SAST 重點檢視</td><td>
+          ✅ <code>LocalAppDataPaths.ChangeRoot</code> 經 <code>Path.GetFullPath</code> 正規化、
+             bootstrap 檔位置硬編、I/O 失敗 fallback 預設 root；
+          ✅ <code>AppSettingsViewModel.SaveAsync</code> 的 <code>IsNestedPath</code>
+             雙向比對；<code>MigrateDirectory</code> 用 <code>Path.GetRelativePath</code>
+             組合目的端，無 path traversal；
+          ✅ <code>ProfiledTemplateXlsmExporter</code> 沿用 v1.5 防 Formula Injection /
+             XML escape 規則，所有自由文字欄位皆覆蓋；
+          ✅ <code>HttpClientCrawler</code> 仍指向白名單域名
+             <code>web.pcc.gov.tw</code>，<code>WhitelistedRedirectHandler</code>
+             與 <code>AllowAutoRedirect=false</code> 設定未變動。
+        </td></tr>
+      </table>
+
+      <h3>6.12 v1.6 Release / Rollout 注意</h3>
+      <p>
+        本次發版的主要使用者面變更為三點，IT 部門/業務 rollout 時可一併說明：
+      </p>
+      <ul>
+        <li>
+          <strong>新增兩顆範本匯出按鈕</strong>（🛡 ISMS / 🍃 ESG）僅在
+          <em>對應關鍵字群組勾選且另一群組未勾選</em>時才會 enable；
+          其他狀態為灰階按鈕，不會誤觸發。原有「📑 匯出 xlsm」按鈕（v1.5 引入）行為不變。
+        </li>
+        <li>
+          <strong>設定頁多了「資料儲存位置」欄位</strong>。預設為
+          <code>%LocalAppData%/TenderSearch/data/</code>，沿用既有路徑、舊使用者不需要任何動作。
+          若使用者想將資料改放於 D: 槽或共用資料夾，可於設定頁直接變更；
+          儲存時程式會詢問「搬移 / 保留 / 取消」。<strong>舊路徑可用磁碟空間有限時建議搬移後再變更</strong>。
+        </li>
+        <li>
+          <strong>爬蟲輸出筆數會略多於 v1.5</strong>（端點由 advanced 改 basic、
+          且移除原本的「公告日不一致則丟棄」濾鏡），數字將與
+          <code>web.pcc.gov.tw</code> 網頁查詢結果完全一致。對使用者而言是更貼近預期的行為，
+          不需要額外操作；但若有同仁過去以「v1.5 抓到的筆數」當作報告 KPI 基準，
+          需提醒口徑變更（詳見 memory 內
+          「PCC basic vs advanced 端點筆數差」備忘）。
+        </li>
+      </ul>
+      <p>
+        v1.6 不含 v1.5 的緊急 update-checker 修補議題（該議題已於 v1.5 解決）；
+        所有自 v1.5 起的更新由內建 banner 自動通知。若使用者仍跑著 pre-v1.5 build，
+        參考 6.9 之手動下載指引。
+      </p>
     </section>
 
     <!-- ================== 7. 待辦項目 ================== -->
@@ -1310,9 +1579,9 @@
 │   ├── Tender.Desktop/          WPF 桌面 app
 │   └── Tender.Installer/        WiX MSI
 ├── tests/
-│   ├── Tender.Core.Tests/       78 tests
+│   ├── Tender.Core.Tests/       86 tests
 │   ├── Tender.Crawler.Tests/    58 tests
-│   ├── Tender.Storage.Tests/    24 tests
+│   ├── Tender.Storage.Tests/    25 tests
 │   └── Tender.AcceptanceTests/  Reqnroll scaffold（dev-phase 預留）
 ├── build/
 │   ├── build-msi.ps1            Publish + WiX 整合腳本
@@ -1328,7 +1597,7 @@
       <pre><code># 重新建置整個 solution
 dotnet build Tender.slnx
 
-# 跑全部單元測試（160 個）
+# 跑全部單元測試（169 個）
 dotnet test tests/Tender.Core.Tests/Tender.Core.Tests.csproj --no-build
 dotnet test tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj --no-build
 dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
@@ -1357,7 +1626,8 @@ dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
     </section>
 
     <footer class="report-footer">
-      本報告為 TenderSearch 專案內部技術文件 — 版本 1.4 / 2026-05-10（.NET 10 + UX 增量功能完整重掃）
+      本報告為 TenderSearch 專案內部技術文件 — 版本 1.6 / 2026-05-13
+      （ISMS / ESG 範本匯出 + 資料儲存位置可變更 + 爬蟲端點切回 basic 完整重掃；HEAD 2e8d0d7）
     </footer>
 
   </main>

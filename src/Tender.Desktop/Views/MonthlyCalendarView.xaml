@@ -90,10 +90,12 @@
                         <TextBlock Text="{Binding Date.Day}"
                                    FontSize="16" FontWeight="Bold"
                                    HorizontalAlignment="Left" />
+                        <!-- ⚠ 失敗指示：右邊距 32px 避開右上角的 📥 重抓按鈕 -->
                         <TextBlock Text="⚠"
                                    FontSize="14"
                                    Foreground="{StaticResource ErrorBrush}"
-                                   HorizontalAlignment="Right">
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,32,0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -115,26 +117,16 @@
                 </Grid>
             </Button>
 
-            <!-- 無資料天：右上角顯示「📥 補抓」小按鈕；跟 cell button 是同 Grid 的兄弟，
-                 不繼承 cell button 的 IsEnabled=False，且 z-order 在上方所以會先吃到點擊。 -->
+            <!-- 右上角的 📥 重抓按鈕：跟 cell button 是同 Grid 的兄弟，
+                 不繼承 cell button 的 IsEnabled=False（無資料天 cell button disabled 時仍可點），
+                 且 z-order 在上方所以會先吃到點擊（有資料天點 📥 不會誤觸發進入日詳情）。 -->
             <Button HorizontalAlignment="Right" VerticalAlignment="Top"
                     Margin="0,4,4,0" Padding="4,1"
                     Content="📥" FontSize="11"
-                    ToolTip="補抓這一天的資料"
+                    ToolTip="重新爬取這一天的資料"
                     Cursor="Hand"
                     Command="{Binding DataContext.FillDayCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
-                    CommandParameter="{Binding Date}">
-              <Button.Style>
-                <Style TargetType="Button">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding Summary}" Value="{x:Null}">
-                      <Setter Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                  </Style.Triggers>
-                </Style>
-              </Button.Style>
-            </Button>
+                    CommandParameter="{Binding Date}" />
           </Grid>
         </DataTemplate>
     </UserControl.Resources>
@@ -146,7 +138,8 @@
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button Content="◀" Command="{Binding GoPreviousMonthCommand}" Padding="14,5" />
+                <Button Content="◀" AutomationProperties.AutomationId="GoPreviousMonthButton"
+                        Command="{Binding GoPreviousMonthCommand}" Padding="14,5" />
                 <TextBlock Margin="20,0" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"
                            Foreground="{StaticResource TextPrimaryBrush}">
                     <TextBlock.Text>
@@ -156,8 +149,10 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
-                <Button Content="▶" Command="{Binding GoNextMonthCommand}" Padding="14,5" />
-                <Button Content="本月" Command="{Binding GoToCurrentMonthCommand}" Padding="14,5" Margin="20,0,0,0" />
+                <Button Content="▶" AutomationProperties.AutomationId="GoNextMonthButton"
+                        Command="{Binding GoNextMonthCommand}" Padding="14,5" />
+                <Button Content="本月" AutomationProperties.AutomationId="GoToCurrentMonthButton"
+                        Command="{Binding GoToCurrentMonthCommand}" Padding="14,5" Margin="20,0,0,0" />
 
                 <!-- 月份概況 chips -->
                 <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6" Padding="12,5"

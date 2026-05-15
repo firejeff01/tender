@@ -16,6 +16,13 @@ public sealed class LocalAppDataPaths : IDataPaths
 
     public LocalAppDataPaths()
     {
+        // 測試覆寫優先：UI 測試會設這個 env var 指向隔離的臨時目錄
+        var testOverride = Environment.GetEnvironmentVariable("TENDER_DATA_ROOT_OVERRIDE");
+        if (!string.IsNullOrWhiteSpace(testOverride))
+        {
+            _dataRoot = testOverride;
+            return;
+        }
         _dataRoot = ReadBootstrapRoot() ?? GetDefaultDataRoot();
     }
 

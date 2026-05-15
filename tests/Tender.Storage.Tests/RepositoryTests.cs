@@ -304,6 +304,7 @@ public sealed class RepositoryTests : IDisposable
                 new KeywordGroup
                 {
                     Name = "測試分類",
+                    Color = "#123456",
                     Items = new[]
                     {
                         new KeywordItem { Keyword = "測試關鍵字", TargetField = "tenderName", Enabled = true }
@@ -317,6 +318,90 @@ public sealed class RepositoryTests : IDisposable
 
         loaded.Groups.Should().HaveCount(1);
         loaded.Groups[0].Name.Should().Be("測試分類");
+        loaded.Groups[0].Color.Should().Be("#123456");
         loaded.Groups[0].Items[0].Keyword.Should().Be("測試關鍵字");
+    }
+
+    /// <summary>
+    /// 舊版 keywords.json 沒有 color 欄位 → 載入時應依索引循環補上預設色盤。
+    /// 模擬手動寫入無 color 的 JSON，再讓 repo 載入。
+    /// </summary>
+    [Fact]
+    public async Task KeywordsRepository_LegacyFileMissingColor_BackfillsFromPalette()
+    {
+        var filePath = _paths.KeywordsFile;
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        // 故意不寫 color 欄位
+        var legacyJson = """
+            {
+              "groups": [
+                { "name": "群組A", "items": [ { "keyword": "a", "targetField": "tenderName", "enabled": true } ] },
+                { "name": "群組B", "items": [ { "keyword": "b", "targetField": "tenderName", "enabled": true } ] }
+              ]
+            }
+            """;
+        await File.WriteAllTextAsync(filePath, legacyJson);
+
+        var repo = new KeywordsRepository(_paths, _writer);
+        var loaded = await repo.LoadAsync();
+
+        loaded.Groups.Should().HaveCount(2);
+        loaded.Groups[0].Color.Should().Be(KeywordGroupColors.GetByIndex(0));
+        loaded.Groups[1].Color.Should().Be(KeywordGroupColors.GetByIndex(1));
+    }
+
+    /// <summary>
+    /// 有 color 的群組不應被覆寫；只有缺 color 的會被補上。
+    /// </summary>
+    [Fact]
+    public async Task KeywordsRepository_PartialColor_OnlyBackfillsMissing()
+    {
+        var filePath = _paths.KeywordsFile;
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        var mixedJson = """
+            {
+              "groups": [
+                { "name": "有色", "color": "#FF0000", "items": [ { "keyword": "a", "targetField": "tenderName", "enabled": true } ] },
+                { "name": "無色", "items": [ { "keyword": "b", "targetField": "tenderName", "enabled": true } ] }
+              ]
+            }
+            """;
+        await File.WriteAllTextAsync(filePath, mixedJson);
+
+        var repo = new KeywordsRepository(_paths, _writer);
+        var loaded = await repo.LoadAsync();
+
+        loaded.Groups[0].Color.Should().Be("#FF0000");
+        loaded.Groups[1].Color.Should().Be(KeywordGroupColors.GetByIndex(1));
+    }
+
+    /// <summary>
+    /// GetEmbeddedDefault 回傳的預設集每個群組都有 Color，且與當前 default-keywords.json 對齊。
+    /// </summary>
+    [Fact]
+    public void KeywordsRepository_GetEmbeddedDefault_AllGroupsHaveColor()
+    {
+        var repo = new KeywordsRepository(_paths, _writer);
+        var embedded = repo.GetEmbeddedDefault();
+
+        embedded.Groups.Should().NotBeEmpty();
+        embedded.Groups.Should().AllSatisfy(g =>
+            g.Color.Should().NotBeNullOrWhiteSpace($"群組 '{g.Name}' 應該有 color 欄位"));
+    }
+
+    /// <summary>
+    /// 內嵌預設群組順序與名稱與當前 default-keywords.json 對齊（防回歸：日後改 JSON 順序時測試會跳）。
+    /// </summary>
+    [Fact]
+    public void KeywordsRepository_GetEmbeddedDefault_NamesAndOrderStable()
+    {
+        var repo = new KeywordsRepository(_paths, _writer);
+        var embedded = repo.GetEmbeddedDefault();
+
+        embedded.Groups.Select(g => g.Name).Should().Equal(new[]
+        {
+            "資訊系統", "XR/AI", "資安/無障礙", "ESG/碳管理",
+            "業務雜項", "智慧管考", "倉儲自動化", "地區", "指定機關",
+        });
     }
 }

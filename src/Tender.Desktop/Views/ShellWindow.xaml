@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Tender.Desktop.ViewModels"
         xmlns:views="clr-namespace:Tender.Desktop.Views"
+        AutomationProperties.AutomationId="ShellWindow"
         Title="政府電子採購網 標案查詢"
         Height="800" Width="1280"
         WindowStartupLocation="CenterScreen"
@@ -39,9 +40,25 @@
                                FontSize="17"
                                VerticalAlignment="Center" />
 
+                    <!-- UI 測試 backdoor：直接觸發 popup 內命令，繞過 WPF Popup（UIA 對 popup 不穩）。
+                         IsTestMode 由 ShellViewModel 從 TENDER_TEST_MODE env var 取得，正式組態下永遠 Collapsed。
+                         有實體 1x1 size + Margin 推到視窗外（UIA 視 Width=0 為 offscreen 而拒絕 Invoke）。 -->
+                    <Button Content="TestOpenKeywordsManager"
+                            AutomationProperties.AutomationId="TestModeOpenKeywordsManagerButton"
+                            Command="{Binding OpenKeywordsManagerCommand}"
+                            Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVis}}"
+                            Width="20" Height="20" Opacity="0" Margin="-9999,-9999,0,0" />
+                    <Button Content="TestOpenAppSettings"
+                            AutomationProperties.AutomationId="TestModeOpenAppSettingsButton"
+                            Command="{Binding OpenAppSettingsCommand}"
+                            Visibility="{Binding IsTestMode, Converter={StaticResource BoolToVis}}"
+                            Width="20" Height="20" Opacity="0" Margin="-9999,-9999,0,0" />
+
                     <!-- 設定選單 -->
                     <Grid Margin="20,0,0,0" VerticalAlignment="Center">
-                        <ToggleButton x:Name="SettingsMenuButton" Content="⚙ 設定" Padding="10,5" Cursor="Hand">
+                        <ToggleButton x:Name="SettingsMenuButton"
+                                      AutomationProperties.AutomationId="SettingsMenuButton"
+                                      Content="⚙ 設定" Padding="10,5" Cursor="Hand">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
                                     <Border x:Name="b" Background="{StaticResource BgCardBrush}"
@@ -73,12 +90,14 @@
                                     <DropShadowEffect Color="#5C4A2E" BlurRadius="10" ShadowDepth="2" Opacity="0.2" />
                                 </Border.Effect>
                                 <StackPanel>
-                                    <Button Content="🔧 管理關鍵字"
+                                    <Button Content="🎨 篩選類別設定"
+                                            AutomationProperties.AutomationId="OpenKeywordsManagerButton"
                                             Command="{Binding OpenKeywordsManagerCommand}"
                                             Click="MenuItem_Click"
                                             HorizontalContentAlignment="Left"
                                             Padding="12,6" Margin="0,1" />
                                     <Button Content="⚙ 應用設定"
+                                            AutomationProperties.AutomationId="OpenAppSettingsButton"
                                             Command="{Binding OpenAppSettingsCommand}"
                                             Click="MenuItem_Click"
                                             HorizontalContentAlignment="Left"

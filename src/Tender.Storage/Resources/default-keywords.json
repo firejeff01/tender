@@ -2,6 +2,7 @@
   "groups": [
     {
       "name": "資訊系統",
+      "color": "#8B6F47",
       "items": [
         { "keyword": "數位", "targetField": "tenderName", "enabled": true },
         { "keyword": "系統", "targetField": "tenderName", "enabled": true },
@@ -18,6 +19,7 @@
     },
     {
       "name": "XR/AI",
+      "color": "#9C5A8C",
       "items": [
         { "keyword": "虛擬", "targetField": "tenderName", "enabled": true },
         { "keyword": "擴增", "targetField": "tenderName", "enabled": true },
@@ -36,6 +38,7 @@
     },
     {
       "name": "資安/無障礙",
+      "color": "#A0524D",
       "items": [
         { "keyword": "ISMS", "targetField": "tenderName", "enabled": true },
         { "keyword": "ISRM", "targetField": "tenderName", "enabled": true },
@@ -45,6 +48,7 @@
     },
     {
       "name": "ESG/碳管理",
+      "color": "#7A8B5C",
       "items": [
         { "keyword": "ESG", "targetField": "tenderName", "enabled": true },
         { "keyword": "永續", "targetField": "tenderName", "enabled": true },
@@ -61,6 +65,7 @@
     },
     {
       "name": "業務雜項",
+      "color": "#C4823C",
       "items": [
         { "keyword": "補助", "targetField": "tenderName", "enabled": true },
         { "keyword": "津貼", "targetField": "tenderName", "enabled": true },
@@ -75,6 +80,7 @@
     },
     {
       "name": "智慧管考",
+      "color": "#5B7C8C",
       "items": [
         { "keyword": "管考", "targetField": "tenderName", "enabled": true },
         { "keyword": "智慧", "targetField": "tenderName", "enabled": true },
@@ -90,6 +96,7 @@
     },
     {
       "name": "倉儲自動化",
+      "color": "#8B5A3C",
       "items": [
         { "keyword": "倉儲", "targetField": "tenderName", "enabled": true },
         { "keyword": "搬運", "targetField": "tenderName", "enabled": true },
@@ -106,6 +113,7 @@
     },
     {
       "name": "地區",
+      "color": "#6B8E6B",
       "items": [
         { "keyword": "基隆", "targetField": "any", "enabled": true },
         { "keyword": "臺北", "targetField": "any", "enabled": true },
@@ -131,6 +139,7 @@
     },
     {
       "name": "指定機關",
+      "color": "#A5664E",
       "items": [
         { "keyword": "經濟部水利署", "targetField": "agencyName", "enabled": true },
         { "keyword": "原住民族委員會", "targetField": "agencyName", "enabled": true },

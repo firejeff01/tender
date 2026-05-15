@@ -48,6 +48,10 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty]
     private bool _isTodayCrawled;
 
+    /// <summary>UI 測試專用：true 時 ShellWindow 會顯示直接呼叫 OpenKeywords/OpenAppSettings 命令的隱藏按鈕，
+    /// 給 FlaUI 繞過 WPF Popup（UIA 對 Popup 操作不穩）。生產組態永遠 false。</summary>
+    public bool IsTestMode => Environment.GetEnvironmentVariable("TENDER_TEST_MODE") == "1";
+
     /// <summary>GitHub 上是否有更新版本可下載。</summary>
     [ObservableProperty]
     private bool _isUpdateAvailable;
@@ -203,6 +207,9 @@ public partial class ShellViewModel : ObservableObject
 
         // 載入行事曆（快速）
         await CalendarVm.LoadMonthCommand.ExecuteAsync(null);
+
+        // UI 測試模式：跳過會 spawn 子行程、發網路、寫排程的背景作業
+        if (Environment.GetEnvironmentVariable("TENDER_TEST_MODE") == "1") return;
 
         // 背景檢查 missed run、更新檢查、資料清理（不阻擋 UI）
         _ = CheckMissedRunInBackgroundAsync(ct);
@@ -379,7 +386,8 @@ public partial class ShellViewModel : ObservableObject
     private bool CanRunCrawler() => !IsCrawlerRunning;
 
     /// <summary>
-    /// 對指定日手動補抓資料。對應行事曆「無資料天」cell 右上角的 📥 按鈕。
+    /// 對指定日手動爬取/重新爬取資料。對應行事曆每日 cell 右上角的 📥 按鈕
+    /// （無資料天「補抓」、已有資料天「重抓」共用同一條 Manual 流程；crawler 對同日重抓是 idempotent 的）。
     /// 跑完後 FileSystemWatcher 會自動 reload 行事曆，不需手動觸發。
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanRunCrawler))]

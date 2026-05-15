@@ -18,6 +18,10 @@ public partial class App : Application
 {
     private IHost? _host;
 
+    /// <summary>UI 測試會設這個 env var，跳過 scheduled task install / missed run / update check 等副作用。</summary>
+    internal static bool IsTestMode =>
+        Environment.GetEnvironmentVariable("TENDER_TEST_MODE") == "1";
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -30,6 +34,8 @@ public partial class App : Application
 
         var shell = _host.Services.GetRequiredService<ShellWindow>();
         shell.Show();
+
+        if (IsTestMode) return;
 
         // 確保每日排程任務以使用者層級存在（idempotent，schtasks /F）。
         // 失敗（例：找不到 crawler exe、或公司 group policy 禁用 schtasks）不影響主程式。
