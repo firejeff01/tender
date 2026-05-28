@@ -10,6 +10,7 @@
         <conv:ListJoinConverter x:Key="ListJoinConverter" />
         <conv:ColorStringToColorConverter x:Key="ColorStringToColor" />
         <conv:SortLabelConverter x:Key="SortLabel" />
+        <conv:BoolToCorrectionTextConverter x:Key="BoolToCorrectionText" />
         <conv:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTime" />
         <conv:ZeroToVisibilityConverter x:Key="ZeroToVis" />
 
@@ -572,7 +573,17 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="機關名稱" Binding="{Binding AgencyName}" Width="180" MinWidth="140" />
-                    <DataGridTextColumn Header="標案名稱" Binding="{Binding TenderName}" Width="*" MinWidth="320" />
+                    <DataGridTemplateColumn Header="標案名稱" Width="*" MinWidth="320" SortMemberPath="TenderName">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                    <Run Text="{Binding DisplayTenderName, Mode=OneWay}" />
+                                    <Run Text="{Binding IsCorrection, Mode=OneWay, Converter={StaticResource BoolToCorrectionText}}"
+                                         Foreground="Red" FontWeight="Bold" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="招標方式" Binding="{Binding TenderMethod}" Width="120" MinWidth="100" />
                     <DataGridTextColumn Header="採購性質" Binding="{Binding ProcurementType}" Width="80" MinWidth="70" />
                     <DataGridTextColumn Header="公告日期" Binding="{Binding AnnouncementDate}" Width="90" MinWidth="80" />
@@ -611,9 +622,13 @@
                             <TextBlock Text="📋 標案詳情" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
                         </Border>
                         <StackPanel Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}}">
-                            <TextBlock Text="{Binding SelectedItem.TenderName}" FontWeight="SemiBold" FontSize="14"
+                            <TextBlock FontWeight="SemiBold" FontSize="14"
                                        TextWrapping="Wrap" Margin="0,0,0,12"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                       Foreground="{StaticResource TextPrimaryBrush}">
+                                <Run Text="{Binding SelectedItem.DisplayTenderName, Mode=OneWay}" />
+                                <Run Text="{Binding SelectedItem.IsCorrection, Mode=OneWay, Converter={StaticResource BoolToCorrectionText}}"
+                                     Foreground="Red" />
+                            </TextBlock>
 
                             <Grid>
                                 <Grid.ColumnDefinitions>

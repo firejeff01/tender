@@ -252,12 +252,12 @@ public sealed class CrawlerOrchestratorTests : IDisposable
         var orchestrator = CreateOrchestrator();
         var run = await orchestrator.RunAsync(new CrawlerArgs { Mode = CrawlerMode.Manual, TargetDate = targetDate });
 
-        // 總數 = 50 + 3 新 = 53
+        // Replace 策略：只保留本次爬蟲的 7 筆
         var snapshot = await _tenderRepo.LoadAsync(targetDate);
-        snapshot!.Items.Should().HaveCount(53);
+        snapshot!.Items.Should().HaveCount(7);
 
         // 每個 SourcePk 唯一
-        snapshot.Items.Select(i => i.SourcePk).Distinct().Should().HaveCount(53);
+        snapshot.Items.Select(i => i.SourcePk).Distinct().Should().HaveCount(7);
 
         // Run 紀錄
         run.InsertedCount.Should().Be(3);

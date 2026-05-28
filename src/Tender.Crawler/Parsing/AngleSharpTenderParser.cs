@@ -85,6 +85,10 @@ public sealed class AngleSharpTenderParser : ITenderParser
                          ?? tenderCell.TextContent.Trim();
         }
 
+        // "(更正公告)" 在同一個 <td> 內以獨立 <span> 呈現，不在 pageCode2Img 裡
+        if (HasCorrectionNotice(tenderCell) && !tenderName.Contains("(更正公告)"))
+            tenderName += "(更正公告)";
+
         // detail URL 從 <a href="..."> 取得
         var detailUrl = tenderCell.QuerySelector("a")?.GetAttribute("href") ?? string.Empty;
         detailUrl = NormalizeUrl(detailUrl);
@@ -141,6 +145,29 @@ public sealed class AngleSharpTenderParser : ITenderParser
             CreatedAt = now,
             LastSeenAt = now,
         };
+    }
+
+    private static bool HasCorrectionNotice(IElement cell)
+    {
+        // 政府網站以 <span> 或其他行內元素包裹 "(更正公告)" 文字，
+        // 位於 <script> 之外，需從整個 cell 的非 script 文字內容偵測。
+        foreach (var node in cell.ChildNodes)
+        {
+            if (node is IElement el && el.LocalName != "script" && el.LocalName != "a")
+            {
+                if (el.TextContent.Contains("更正公告"))
+                    return true;
+            }
+        }
+
+        // 也可能是 <a> 外的直接文字節點
+        foreach (var node in cell.ChildNodes)
+        {
+            if (node.NodeType == AngleSharp.Dom.NodeType.Text && node.TextContent.Contains("更正公告"))
+                return true;
+        }
+
+        return false;
     }
 
     private static string ExtractTenderName(IElement cell)

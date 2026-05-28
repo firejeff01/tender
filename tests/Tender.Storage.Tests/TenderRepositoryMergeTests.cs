@@ -114,10 +114,10 @@ public sealed class TenderRepositoryMergeTests : IDisposable
         result.SkippedCount.Should().Be(2);
 
         var loaded = await _repo.LoadAsync(date);
-        loaded!.Items.Should().HaveCount(53, "50 original + 3 new");
+        loaded!.Items.Should().HaveCount(7, "replace strategy: only incoming items are kept");
 
         // 所有 SourcePk 唯一
-        loaded.Items.Select(x => x.SourcePk).Distinct().Should().HaveCount(53);
+        loaded.Items.Select(x => x.SourcePk).Distinct().Should().HaveCount(7);
 
         // PK001、PK002 的 LastSeenAt 應更新，CreatedAt 應保留原始值
         var pk001 = loaded.Items.First(x => x.SourcePk == "PK001");
@@ -143,6 +143,23 @@ public sealed class TenderRepositoryMergeTests : IDisposable
 
         var loaded = await _repo.LoadAsync(date);
         loaded!.Items.Count(x => x.SourcePk == "PK001").Should().Be(1);
+    }
+
+    // ---- Replace 策略：本次未出現的舊記錄不保留 ----
+    [Fact]
+    public async Task Merge_Replace_OldItemsNotInNewCrawlAreRemoved()
+    {
+        var date = new DateOnly(2026, 5, 8);
+        var initial = new[] { MakeItem("PK001"), MakeItem("PK002"), MakeItem("PK003") };
+        await _repo.MergeDailySnapshotAsync(date, initial, BaseTime);
+
+        // 第二次只送 PK001 和 PK003，PK002 應被移除
+        var second = new[] { MakeItem("PK001"), MakeItem("PK003") };
+        await _repo.MergeDailySnapshotAsync(date, second, BaseTime.AddHours(1));
+
+        var loaded = await _repo.LoadAsync(date);
+        loaded!.Items.Should().HaveCount(2);
+        loaded.Items.Any(x => x.SourcePk == "PK002").Should().BeFalse("PK002 was not in new crawl");
     }
 
     // ---- 跨日資料夾獨立 ----

@@ -65,16 +65,16 @@ public sealed class TenderRepository : ITenderRepository
         int updatedCount = 0;
         int skippedCount = 0;
 
-        var merged = new Dictionary<string, TenderItem>(existingDict, StringComparer.Ordinal);
+        // Replace 策略：最終快照只包含本次爬蟲結果，不保留舊資料中本次未出現的記錄。
+        // 仍比對 existingDict 以保留 CreatedAt 並計算 insert/update/skip 數量。
+        var merged = new Dictionary<string, TenderItem>(incomingItems.Count, StringComparer.Ordinal);
 
         foreach (var incoming in incomingItems)
         {
             if (existingDict.TryGetValue(incoming.SourcePk, out var existingItem))
             {
-                // 判斷是否有變更（比較關鍵欄位）
                 if (HasChanges(existingItem, incoming))
                 {
-                    // 更新：保留 CreatedAt，更新 LastSeenAt 與其他欄位
                     merged[incoming.SourcePk] = incoming with
                     {
                         CreatedAt = existingItem.CreatedAt,
@@ -84,14 +84,12 @@ public sealed class TenderRepository : ITenderRepository
                 }
                 else
                 {
-                    // 略過：保留既有，只更新 LastSeenAt
                     merged[incoming.SourcePk] = existingItem with { LastSeenAt = now };
                     skippedCount++;
                 }
             }
             else
             {
-                // 新增
                 merged[incoming.SourcePk] = incoming with
                 {
                     CreatedAt = now,

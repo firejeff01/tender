@@ -195,6 +195,12 @@
     border-radius: 3px;
     font-size: 12.5px;
   }
+  /* 表格內 inline code 容易塞超長 identifier（如 AppSettingsRepository_MigratesLegacyTenderMethodName）
+     而把 cell 撐爆。允許在任意位置斷行，配合表格 column width 控制可避免跑版／超框。 */
+  td code, th code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 
   pre {
     background: #1e293b;
@@ -374,12 +380,12 @@
       <dl class="meta">
         <div><dt>產品名稱</dt><dd>TenderSearch</dd></div>
         <div><dt>分類</dt><dd>內部桌面工具（Windows）</dd></div>
-        <div><dt>報告日期</dt><dd>2026-05-13（v1.6 業務功能增量 + 重掃）</dd></div>
-        <div><dt>報告版本</dt><dd>1.6</dd></div>
+        <div><dt>報告日期</dt><dd>2026-05-15（v1.7 篩選類別設定重做 + 自動化測試擴充 + 重掃）</dd></div>
+        <div><dt>報告版本</dt><dd>1.7</dd></div>
         <div><dt>執行環境</dt><dd>.NET 10 LTS（支援至 2028-11）</dd></div>
-        <div><dt>單元測試覆蓋</dt><dd>169 / 169 通過</dd></div>
-        <div><dt>套件 audit 結果</dt><dd>0 known vuln（8 csproj 全綠）</dd></div>
-        <div><dt>分支</dt><dd>main（v1.6 已合併，HEAD 2e8d0d7）</dd></div>
+        <div><dt>單元測試覆蓋</dt><dd>213 / 213 通過（+44）；UI 測試 6 / 12 通過（6 標 Skip，已知 UIA3 限制）</dd></div>
+        <div><dt>套件 audit 結果</dt><dd>0 known vuln（10 csproj 全綠）</dd></div>
+        <div><dt>分支</dt><dd>main（v1.7 已合併，HEAD b96e728）</dd></div>
       </dl>
     </header>
 
@@ -512,6 +518,111 @@
         （Excel 鎖檔 <code>~$*.xlsm</code> 進 git，詳見新增 F-010）。
         單元測試維持 169 / 169 全綠；本機 vulnerable package audit 8 個 csproj 全綠。
       </p>
+      <h4>v1.7 補充（2026-05-15，HEAD <code>b96e728</code>）</h4>
+      <p>
+        單一 commit <code>b96e728 modify customer set search filter option</code> 從 dev 合併至 main，
+        覆蓋 31 個檔案 / +2029 / −124 行。主軸為
+        <strong>「篩選類別設定」全面重做 + 自動化測試骨幹擴充</strong>，共 5 個變更群組：
+      </p>
+
+      <div class="summary-grid">
+        <div class="stat">
+          <div class="label">UI 改善</div>
+          <div class="value">2</div>
+          <div style="font-size:12px;color:var(--c-text-dim);margin-top:4px;">行事曆 📥 擴展、篩選類別設定重做</div>
+        </div>
+        <div class="stat">
+          <div class="label">升級補項目</div>
+          <div class="value">1</div>
+          <div style="font-size:12px;color:var(--c-text-dim);margin-top:4px;">合併新版預設按鈕</div>
+        </div>
+        <div class="stat">
+          <div class="label">新增測試</div>
+          <div class="value">+44</div>
+          <div style="font-size:12px;color:var(--c-text-dim);margin-top:4px;">169 → 213 全綠</div>
+        </div>
+        <div class="stat">
+          <div class="label">新測試專案</div>
+          <div class="value">2</div>
+          <div style="font-size:12px;color:var(--c-text-dim);margin-top:4px;">Desktop.Tests / Desktop.UiTests</div>
+        </div>
+        <div class="stat">
+          <div class="label">新弱點</div>
+          <div class="value">0</div>
+          <div style="font-size:12px;color:var(--c-text-dim);margin-top:4px;">SAST 重檢、package audit 全綠</div>
+        </div>
+      </div>
+
+      <h4 style="margin-top:18px;">(a) 行事曆「📥 重抓」按鈕擴展</h4>
+      <p>
+        之前只在無資料天顯示，現在每個日期都能觸發 <code>FillDayCommand</code> 重抓資料。
+        z-order 保證點 📥 不會誤進入日詳情；crawler 對同日重抓本來就是 idempotent
+        （<code>LastSeenAt</code> 更新、<code>CreatedAt</code> 不變）。
+      </p>
+
+      <h4>(b) 「篩選類別設定」UI 與 model 重做</h4>
+      <ul>
+        <li><strong>類別顏色</strong>：<code>KeywordGroup</code> 加 <code>Color</code> 欄位（hex string，向後相容）；
+            9 色預設色盤集中於新檔 <code>KeywordGroupColors.cs</code>；
+            舊 JSON 缺欄位時依索引循環自動 backfill。</li>
+        <li><strong>拖拉重排</strong>：群組與項目皆支援 drag-and-drop（新 <code>Helpers/ListBoxReorderHelper.cs</code>）+
+            ↑/↓ 輔助按鈕。</li>
+        <li><strong>顏色設定</strong>：類別色塊點擊彈出 5×2 preset palette popup；
+            新增類別自動指派下一個未用色。</li>
+        <li><strong>比對欄位中文化</strong>：<code>tenderName</code>→「標案名稱」、
+            <code>agencyName</code>→「機關名稱」、<code>any</code>→「標案名稱＋機關名稱」
+            （JSON 鍵維持英文向後相容）。</li>
+      </ul>
+
+      <h4>(c) 「🔄 合併新版預設」按鈕</h4>
+      <p>
+        解決升級用戶（如同事更新到含 v1.6 ESG 新詞的版本）本機 <code>keywords.json</code>
+        不會自動套用新內嵌預設的問題。合併語意：
+      </p>
+      <ul>
+        <li>同名群組 → 補上「使用者沒有的」項目（以 <code>Keyword + TargetField</code> 比對等值）</li>
+        <li>沒見過的群組 → 整組 append 在最後</li>
+        <li><strong>不動既有順序、顏色、enabled、targetField、自訂項目</strong>；重複按安全</li>
+      </ul>
+
+      <h4>(d) 自動化測試體系擴充</h4>
+      <ul>
+        <li><code>tests/Tender.Desktop.Tests</code>（新）：純 ViewModel 單元測試 29 個。
+            Moq 化 <code>IKeywordsRepository</code>，覆蓋 reorder 邏輯、AddGroup 配色、Merge 合併語意、
+            HasUnsavedChanges 觸發、TargetFieldOptions 中文映射、Save 寫回順序與 Color。</li>
+        <li><code>tests/Tender.Desktop.UiTests</code>（新）：FlaUI 5 + UIA3 端到端 smoke。
+            可跑 6 個（app launch / DataRoot 隔離 / shell title / settings toggle / 月份切換 ×2）。</li>
+        <li><code>Tender.Storage.Tests</code> +4：color round-trip、舊版 backfill、部分 backfill、
+            embedded default 順序穩定。</li>
+        <li><code>Tender.Core.Tests</code> +11：<code>KeywordGroupColorsTests</code>
+            （palette 完整性、<code>GetByIndex</code> 正負越界 wrap）。</li>
+      </ul>
+      <p>
+        合計 <strong>unit test 213 / 213 全綠（+44）；UI smoke 6 通過 / 6 標 Skip / 0 失敗</strong>。
+        Skip 為已知 FlaUI/UIA3 + WPF <code>IAsyncRelayCommand → ShowDialog</code> 路徑下
+        子視窗 UIA 不可見的結構性問題（5 種變化都試過），ShellWindow 已留
+        <code>TestModeOpen*Button</code> hidden backdoor 待未來突破。
+      </p>
+
+      <h4>(e) Production 端 testability hooks</h4>
+      <ul>
+        <li><code>TENDER_DATA_ROOT_OVERRIDE</code>：<code>LocalAppDataPaths</code> 改用測試臨時目錄。</li>
+        <li><code>TENDER_TEST_MODE=1</code>：<code>App.OnStartup</code> 跳過 scheduled task install；
+            <code>ShellViewModel.LoadAsync</code> 跳過 missed run / update check / cleanup；
+            ShellWindow 上兩顆 hidden test backdoor 按鈕變為 Visible（Margin -9999 推到視窗外）。</li>
+      </ul>
+      <p>
+        <strong>正式部署都不會設這些 env var、hidden 按鈕亦不會顯現</strong>，
+        程式行為與 v1.6 完全一致。
+      </p>
+
+      <div class="callout">
+        <strong>安全結論：</strong>未引入新弱點。新增程式碼路徑全經 SAST 重點檢視
+        — drag-drop helper 純記憶體 index 計算、merge 語意以 <code>Keyword + TargetField</code>
+        比對等值、Color hex 字串只用於 WPF <code>SolidColorBrush</code> 顯示，
+        無 string-typed control flow。本機 vulnerable package audit 10 個 csproj 全綠。
+      </div>
+
     </section>
 
     <!-- ================== 2. 技術選型 ================== -->
@@ -1056,7 +1167,12 @@
         v1.3 之後新增的程式碼皆經獨立安全審查，<strong>未引入新弱點</strong>。下表為對應變動：
       </p>
       <table>
-        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+        <tr>
+          <th style="width:14%;">類別</th>
+          <th style="width:22%;">項目</th>
+          <th style="width:30%;">檔案</th>
+          <th>安全相關說明</th>
+        </tr>
         <tr>
           <td rowspan="2">Bug 修補</td>
           <td>排程任務 Command 引號污染</td>
@@ -1132,7 +1248,12 @@
         所有新增程式碼皆經獨立安全審查，<strong>未引入新弱點</strong>。下表為對應變動：
       </p>
       <table>
-        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+        <tr>
+          <th style="width:14%;">類別</th>
+          <th style="width:22%;">項目</th>
+          <th style="width:30%;">檔案</th>
+          <th>安全相關說明</th>
+        </tr>
         <tr>
           <td rowspan="2">資料對應修正</td>
           <td>招標方式 PM 訂正</td>
@@ -1284,7 +1405,12 @@
         <strong>未引入新弱點</strong>。下表為對應變動：
       </p>
       <table>
-        <tr><th>類別</th><th>項目</th><th>檔案</th><th>安全相關說明</th></tr>
+        <tr>
+          <th style="width:14%;">類別</th>
+          <th style="width:22%;">項目</th>
+          <th style="width:30%;">檔案</th>
+          <th>安全相關說明</th>
+        </tr>
 
         <tr>
           <td rowspan="2">範本匯出擴充<br>（ISMS / ESG）</td>
@@ -1481,6 +1607,201 @@
         所有自 v1.5 起的更新由內建 banner 自動通知。若使用者仍跑著 pre-v1.5 build，
         參考 6.9 之手動下載指引。
       </p>
+
+      <h3>6.13 v1.7 增量功能與安全審查</h3>
+      <p>
+        v1.7 為單一 commit <code>b96e728</code> 從 dev 合併至 main（31 檔案 / +2029 / −124 行）。
+        下表將變動分為 6 群組，每列僅列關鍵檔案與安全要點；完整檔案路徑清單見 §9.A 附錄。
+      </p>
+      <table>
+        <tr>
+          <th style="width:14%;">類別</th>
+          <th style="width:24%;">項目</th>
+          <th style="width:30%;">關鍵檔案</th>
+          <th>安全要點</th>
+        </tr>
+
+        <tr>
+          <td>行事曆 UI</td>
+          <td>「📥 重抓」按鈕擴展為所有日期可見</td>
+          <td><code>Views/MonthlyCalendarView.xaml</code></td>
+          <td>純 UI 行為變更；<code>FillDayCommand</code> 仍走既有
+              <code>CrawlerMode.Manual</code> 路徑（同日重抓 idempotent，
+              <code>LastSeenAt</code> 更新但 <code>CreatedAt</code> 不變）。
+              z-order 保證點 📥 不會誤進入日詳情。</td>
+        </tr>
+
+        <tr>
+          <td>篩選類別 model</td>
+          <td><code>KeywordGroup.Color</code> + 9 色預設色盤 + 舊 JSON backfill</td>
+          <td>
+            <code>Core/Models/KeywordSet.cs</code><br>
+            <code>Core/Models/KeywordGroupColors.cs</code>（新）<br>
+            <code>Storage/Repositories/KeywordsRepository.cs</code><br>
+            <code>Storage/Resources/default-keywords.json</code>
+          </td>
+          <td><code>Color</code> 為非 required 欄位，預設空字串、向後相容。
+              hex 字串只進 <code>SolidColorBrush.Color</code> 顯示，<strong>無 string-typed
+              control flow</strong>；<code>BackfillColors</code> 僅補缺欄位、不覆蓋自訂值。</td>
+        </tr>
+
+        <tr>
+          <td>篩選類別 UI / VM</td>
+          <td>視窗重做（顏色 popup + drag-drop + ↑↓ + 中文比對欄位 + Merge 按鈕）</td>
+          <td>
+            <code>Views/KeywordsManageWindow.xaml</code>（+283 / −123）<br>
+            <code>ViewModels/KeywordsManageViewModel.cs</code>（+185）<br>
+            <code>Helpers/ListBoxReorderHelper.cs</code>（新）<br>
+            <code>ViewModels/DailyQueryViewModel.cs</code>
+          </td>
+          <td>drag-drop payload 為 <code>System.Int32</code> index，helper 不假設集合型別、
+              不用反射；<code>TargetFieldOption</code> 強型別 record，
+              <strong>JSON 儲存仍為英文鍵</strong>，向後相容。覆蓋 29 個新單元測試（見 §6.14）。</td>
+        </tr>
+
+        <tr>
+          <td>升級補項目</td>
+          <td>「🔄 合併新版預設」按鈕</td>
+          <td>
+            <code>ViewModels/KeywordsManageViewModel.cs</code><br>
+            <code>Storage/Repositories/KeywordsRepository.cs</code>
+          </td>
+          <td>合併語意以 <code>Keyword + TargetField</code> 雙欄位比對等值，
+              <strong>不動既有設定</strong>，重複按 idempotent；
+              完成後 <code>HasUnsavedChanges=true</code>，必須使用者按「💾 儲存」才落地，
+              <strong>無自動寫檔</strong>。</td>
+        </tr>
+
+        <tr>
+          <td>主視窗 menu</td>
+          <td>原「🔧 管理關鍵字」入口移除，合併為「🎨 篩選類別設定」單一入口</td>
+          <td><code>Views/ShellWindow.xaml</code></td>
+          <td>menu binding 與底層 <code>OpenKeywordsManagerCommand</code> 維持不變，純標籤調整。</td>
+        </tr>
+
+        <tr>
+          <td>測試 hooks<br>（production）</td>
+          <td>兩個 env var + ShellWindow hidden 按鈕</td>
+          <td>
+            <code>App.xaml.cs</code><br>
+            <code>ViewModels/ShellViewModel.cs</code><br>
+            <code>Storage/Paths/LocalAppDataPaths.cs</code><br>
+            <code>Views/ShellWindow.xaml</code>
+          </td>
+          <td>env var 詳見 §8.5。<strong>正式部署不會設這些 var</strong>，
+              hidden 按鈕 Visibility=Collapsed 不在 visual tree、UIA 找不到。
+              env var 讀取為純字串、無反序列化、不影響權限模型。</td>
+        </tr>
+
+        <tr>
+          <td>自動化測試<br>（新增專案）</td>
+          <td>Tender.Desktop.Tests + Tender.Desktop.UiTests（FlaUI 5 / UIA3）</td>
+          <td>
+            <code>tests/Tender.Desktop.Tests/</code>（29 tests）<br>
+            <code>tests/Tender.Desktop.UiTests/</code>（12 tests，6 通過 / 6 Skip）
+          </td>
+          <td>UI 測試 fixture 透過 env var 隔離 DataRoot 至 <code>%Temp%/tender-ui-tests/&lt;guid&gt;</code>；
+              dispose 時 <code>Process.Kill(entireProcessTree:true)</code> + <code>WaitForExit(5000)</code>
+              強制清理 NotifyIcon tray + 砍臨時目錄。<strong>無 admin 需求、無防火牆規則、不存取網路</strong>。
+              已知限制：<code>IAsyncRelayCommand → ShowDialog</code> 路徑下子視窗 UIA 不可見，
+              6 個測試標 Skip 待未來突破。</td>
+        </tr>
+
+        <tr>
+          <td>WinForms / WPF alias</td>
+          <td>GlobalUsings 補齊衝突型別（9 個 alias）</td>
+          <td><code>GlobalUsings.cs</code></td>
+          <td>承襲 v1.x 因 NotifyIcon 啟用 <code>UseWindowsForms</code> 引發的 WinForms vs WPF
+              型別衝突，統一 alias 為 WPF 端，<strong>無編譯時行為差異</strong>。</td>
+        </tr>
+      </table>
+
+      <h3>6.14 v1.7 重掃驗證</h3>
+      <table>
+        <tr><th>驗證項目</th><th>結果</th></tr>
+        <tr><td><code>dotnet build Tender.slnx -c Debug</code>（.NET 10）</td><td>0 errors / 0 warnings</td></tr>
+        <tr><td>Tender.Core.Tests</td><td>✅ <strong>97</strong> / 97 通過（420 ms，+11 自 v1.6：<code>KeywordGroupColorsTests</code>）</td></tr>
+        <tr><td>Tender.Crawler.Tests</td><td>✅ 58 / 58 通過（3 s，未變動）</td></tr>
+        <tr><td>Tender.Storage.Tests</td><td>✅ <strong>29</strong> / 29 通過（689 ms，+4 自 v1.6：color round-trip / 舊版 JSON backfill / 部分 backfill / embedded default 順序穩定）</td></tr>
+        <tr><td>Tender.Desktop.Tests（新）</td><td>✅ <strong>29</strong> / 29 通過（1 s）— 純 ViewModel 測試</td></tr>
+        <tr><td>Tender.Desktop.UiTests（新，FlaUI）</td><td>✅ <strong>6 通過 / 6 Skipped</strong>（Skip 為已知 ShowDialog 限制，見 §6.13）</td></tr>
+        <tr><td><strong>單元測試總計</strong></td><td><strong>213 / 213 通過</strong>（+44 自 v1.6 169）</td></tr>
+        <tr><td>本機 vulnerable package audit（10 csproj）</td><td>0 known vulnerability（含 transitive）</td></tr>
+      </table>
+
+      <h4 style="margin-top:18px;">SAST 重點檢視（新增程式碼路徑）</h4>
+      <ul>
+        <li><code>KeywordGroupColors.GetByIndex</code>：純模運算
+            <code>((idx % n) + n) % n</code>，含負數索引保護。</li>
+        <li><code>KeywordsRepository.BackfillColors</code> /
+            <code>GetEmbeddedDefault</code>：沿用既有 embedded resource 讀取與
+            <code>System.Text.Json</code> 嚴格反序列化路徑，無新 I/O 介面。</li>
+        <li><code>ListBoxReorderHelper</code>：drag payload 為
+            <code>System.Int32</code> 強型別，callback 由 ViewModel 處理實際集合操作，
+            <strong>無反射、無集合型別假設</strong>。</li>
+        <li><code>KeywordsManageViewModel.MergeEmbeddedDefaults</code>：以
+            <code>Keyword + TargetField</code> 雙欄位 C# string equality 比對等值，
+            <strong>無正則、無外部命令</strong>；新項目複製欄位至新物件、不修改傳入物件。</li>
+        <li><code>TENDER_DATA_ROOT_OVERRIDE</code> /
+            <code>TENDER_TEST_MODE</code>：純字串讀取，前者走 v1.6 既有
+            <code>Path.GetFullPath</code> 正規化，後者僅 control flow 跳過副作用，
+            <strong>不影響權限模型</strong>。</li>
+        <li>ShellWindow hidden test backdoor：<code>IsTestMode=false</code> 時
+            <strong>Visibility=Collapsed</strong> 不在 visual tree，UIA 找不到、
+            無法被外部 UIA client 觸發。</li>
+        <li>FlaUI UI 測試 fixture：env var 隔離臨時 DataRoot，dispose 時
+            <code>Process.Kill</code> + <code>WaitForExit(5000)</code> + 砍臨時目錄；
+            <strong>不存取主使用者 %LocalAppData%、不開 listening socket、不存取網路</strong>。</li>
+      </ul>
+
+      <h3>6.15 v1.7 Release / Rollout 注意</h3>
+      <p>
+        本次發版的主要使用者面變更為三點，IT 部門/業務 rollout 時可一併說明：
+      </p>
+      <ul>
+        <li>
+          <strong>行事曆「📥 重抓」按鈕現在出現在每一個日期</strong>（之前只在無資料天）。
+          點擊會重抓該日資料；對既有資料天為「重新爬取」用途
+          （crawler 同日重抓本來就 idempotent，<code>LastSeenAt</code> 更新但 <code>CreatedAt</code>
+          不變）。z-order 設計保證點 📥 不會誤觸發進入該日詳情頁。
+        </li>
+        <li>
+          <strong>原「🔧 管理關鍵字」menu 入口已移除，合併為「🎨 篩選類別設定」單一入口</strong>
+          （位於設定 menu 中）。新版本把類別與項目編輯、顏色設定、順序拖拉、項目排序整合在同一個視窗，
+          原來「管理關鍵字」的所有功能都還在，只是入口統一。
+        </li>
+        <li>
+          <strong>升級用戶若想取得 v1.6 起新增的 ESG 預設項目（或日後新增的預設）</strong>，
+          請打開「🎨 篩選類別設定」→ 點底部「🔄 合併新版預設」→ 按「💾 儲存」。
+          合併會 <em>只補上使用者沒有的群組與項目</em>，<strong>不會動到既有順序、顏色、自訂內容</strong>，
+          重複按安全。已是最新時會顯示「目前已是最新預設」。
+        </li>
+      </ul>
+
+      <h4 style="margin-top:18px;">向後相容性</h4>
+      <p>
+        既有使用者的 <code>keywords.json</code>（沒有 <code>color</code> 欄位）首次以 v1.7 載入時，
+        會依群組索引循環指派預設色盤；<strong>不影響現有設定，只是補上欄位</strong>。
+        儲存後 JSON 會多出 <code>"color": "#XXXXXX"</code> 欄位，<strong>下次跑舊版（pre-v1.7）也能繼續讀</strong>
+        （舊版會忽略未識別欄位）。
+      </p>
+
+      <div class="callout">
+        <strong>正式部署不受測試 hooks 影響：</strong>
+        v1.7 新增的兩個 env var（<code>TENDER_DATA_ROOT_OVERRIDE</code> /
+        <code>TENDER_TEST_MODE</code>）與 ShellWindow 上的兩顆 hidden 測試按鈕
+        在正式部署環境不會被啟用，程式行為與 v1.6 完全一致。
+        新增的測試專案僅在開發 / CI 機編譯執行，<strong>不打包進 MSI、不安裝到使用者機器</strong>。
+      </div>
+
+      <div class="callout warn">
+        <strong>已知 UI 測試限制：</strong>
+        FlaUI 5 + UIA3 在本專案 <code>IAsyncRelayCommand → ShowDialog</code> 路徑下無法偵測子視窗（試過 5 種變化），
+        導致 6 個 child-window 測試標 <code>[Fact(Skip)]</code>。
+        對應的 ViewModel 邏輯層由 <code>Tender.Desktop.Tests</code> 的 29 個單元測試完整覆蓋；
+        ShellWindow 已保留 hidden test backdoor，未來找到突破口可直接重啟用。
+        <strong>此限制不影響使用者功能，僅影響測試覆蓋面</strong>。
+      </div>
     </section>
 
     <!-- ================== 7. 待辦項目 ================== -->
@@ -1502,6 +1823,13 @@
           <td>F-009 排定季度套件 audit</td>
           <td>納入維運清單；Dependabot 已自動處理週級監控</td>
           <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge sev-info">P3</span></td>
+          <td>FlaUI 子視窗測試突破口（v1.7 待解）</td>
+          <td>研究 <code>IAsyncRelayCommand → ShowDialog</code> 路徑下子視窗 UIA 不可見的 root cause；
+              目前 6 個測試標 Skip，ViewModel 邏輯層已由單元測試完整覆蓋。</td>
+          <td>1–2 天</td>
         </tr>
       </table>
 
@@ -1564,6 +1892,38 @@
         <li>不上傳任何 telemetry。</li>
         <li>不執行下載的程式碼；自動更新只通知，不自動安裝。</li>
       </ul>
+
+      <h3>8.5 環境變數（v1.7 新增測試 hook）</h3>
+      <p>
+        v1.7 引入兩個 production 端可選的 env var，<strong>正式部署無需設置</strong>，
+        僅 CI / 本機 UI 測試用：
+      </p>
+      <table>
+        <tr>
+          <th style="width:24%;">環境變數</th>
+          <th>用途</th>
+          <th style="width:26%;">正式部署</th>
+        </tr>
+        <tr>
+          <td><code>TENDER_DATA_ROOT_OVERRIDE</code></td>
+          <td><code>LocalAppDataPaths</code> 用此值取代
+              <code>%LocalAppData%/TenderSearch/data</code>，給 UI 測試隔離臨時目錄用。</td>
+          <td>不設置；行為與 v1.6 一致（讀 bootstrap 檔 → fallback 預設 root）。</td>
+        </tr>
+        <tr>
+          <td><code>TENDER_TEST_MODE=1</code></td>
+          <td>啟用後 <code>App.OnStartup</code> 跳過 scheduled task install；
+              <code>ShellViewModel.LoadAsync</code> 跳過 missed run / update check / cleanup；
+              ShellWindow 上的兩顆 hidden test backdoor 按鈕（
+              <code>TestModeOpenKeywordsManagerButton</code> /
+              <code>TestModeOpenAppSettingsButton</code>）變為 Visible 但 Margin 推到視窗外。</td>
+          <td>不設置；hidden 按鈕 <code>Visibility=Collapsed</code> 不在 visual tree。</td>
+        </tr>
+      </table>
+      <p>
+        這些 hook <strong>不影響權限模型、不開外連、不寫 HKLM</strong>；
+        env var 讀取為純字串比對 <code>Environment.GetEnvironmentVariable</code>。
+      </p>
     </section>
 
     <!-- ================== 9. 附錄 ================== -->
@@ -1579,10 +1939,12 @@
 │   ├── Tender.Desktop/          WPF 桌面 app
 │   └── Tender.Installer/        WiX MSI
 ├── tests/
-│   ├── Tender.Core.Tests/       86 tests
-│   ├── Tender.Crawler.Tests/    58 tests
-│   ├── Tender.Storage.Tests/    25 tests
-│   └── Tender.AcceptanceTests/  Reqnroll scaffold（dev-phase 預留）
+│   ├── Tender.Core.Tests/        97 tests（v1.7 +11）
+│   ├── Tender.Crawler.Tests/     58 tests
+│   ├── Tender.Storage.Tests/     29 tests（v1.7 +4）
+│   ├── Tender.Desktop.Tests/     29 tests（v1.7 新，純 ViewModel 單元測試）
+│   ├── Tender.Desktop.UiTests/   12 tests（v1.7 新，FlaUI 端到端；6 過 / 6 Skip）
+│   └── Tender.AcceptanceTests/   Reqnroll scaffold（dev-phase 預留）
 ├── build/
 │   ├── build-msi.ps1            Publish + WiX 整合腳本
 │   └── convert-icon.ps1         PNG → ICO
@@ -1597,10 +1959,14 @@
       <pre><code># 重新建置整個 solution
 dotnet build Tender.slnx
 
-# 跑全部單元測試（169 個）
+# 跑全部單元測試（v1.7 起共 213 個）
 dotnet test tests/Tender.Core.Tests/Tender.Core.Tests.csproj --no-build
 dotnet test tests/Tender.Crawler.Tests/Tender.Crawler.Tests.csproj --no-build
 dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
+dotnet test tests/Tender.Desktop.Tests/Tender.Desktop.Tests.csproj --no-build
+
+# 跑 FlaUI UI smoke（v1.7 新；需要互動式 desktop session）
+dotnet test tests/Tender.Desktop.UiTests/Tender.Desktop.UiTests.csproj --no-build
 
 # 建置 self-contained MSI（含 .NET 10 runtime, ~80MB）
 .\build\build-msi.ps1
@@ -1626,8 +1992,10 @@ dotnet test tests/Tender.Storage.Tests/Tender.Storage.Tests.csproj --no-build
     </section>
 
     <footer class="report-footer">
-      本報告為 TenderSearch 專案內部技術文件 — 版本 1.6 / 2026-05-13
-      （ISMS / ESG 範本匯出 + 資料儲存位置可變更 + 爬蟲端點切回 basic 完整重掃；HEAD 2e8d0d7）
+      本報告為 TenderSearch 專案內部技術文件 — 版本 1.7 / 2026-05-15
+      （篩選類別設定全面重做：類別顏色 + 拖拉重排 + 比對欄位中文化 + 「合併新版預設」按鈕；
+      自動化測試體系擴充：+44 unit tests / 新增 Tender.Desktop.Tests + Tender.Desktop.UiTests 兩個專案 / FlaUI smoke 6 過 6 Skip；
+      production 端 testability hooks；HEAD b96e728）
     </footer>
 
   </main>

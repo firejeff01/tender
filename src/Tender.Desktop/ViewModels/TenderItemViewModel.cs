@@ -23,9 +23,13 @@ public partial class TenderItemViewModel : ObservableObject
     [ObservableProperty]
     private string _note = string.Empty;
 
+    private const string CorrectionTag = "(更正公告)";
+
     public string SourcePk => Item.SourcePk;
     public string AgencyName => Item.AgencyName;
     public string TenderName => Item.TenderName;
+    public bool IsCorrection => Item.TenderName.Contains(CorrectionTag);
+    public string DisplayTenderName => Item.TenderName.Replace(CorrectionTag, "").Trim();
     public string TenderMethod => Item.TenderMethod;
     public string? ProcurementType => Item.ProcurementType;
     public string AnnouncementDate => Item.AnnouncementDate;

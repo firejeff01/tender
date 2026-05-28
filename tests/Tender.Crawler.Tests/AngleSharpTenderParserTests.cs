@@ -27,11 +27,11 @@ public sealed class AngleSharpTenderParserTests
     // ---- 正常解析 ----
 
     [Fact]
-    public void Parse_SampleHtml_Returns3Items()
+    public void Parse_SampleHtml_Returns4Items()
     {
         var html = LoadFixture("tender_list_sample.html");
         var items = _parser.Parse(html, _now);
-        items.Should().HaveCount(3);
+        items.Should().HaveCount(4);
     }
 
     [Fact]
@@ -75,6 +75,63 @@ public sealed class AngleSharpTenderParserTests
             item.CreatedAt.Should().Be(_now);
             item.LastSeenAt.Should().Be(_now);
         }
+    }
+
+    // ---- 更正公告 ----
+
+    [Fact]
+    public void Parse_SampleHtml_CorrectionItemHasCorrectionTag()
+    {
+        var html = LoadFixture("tender_list_sample.html");
+        var items = _parser.Parse(html, _now);
+
+        var correction = items.First(x => x.SourcePk == "Y29ycmVjdDAxMQ==");
+        correction.TenderName.Should().Contain("(更正公告)");
+        correction.TenderName.Should().StartWith("台北市道路養護工程");
+    }
+
+    [Fact]
+    public void Parse_SampleHtml_NormalItemsDoNotHaveCorrectionTag()
+    {
+        var html = LoadFixture("tender_list_sample.html");
+        var items = _parser.Parse(html, _now);
+
+        items[0].TenderName.Should().NotContain("更正公告");
+        items[1].TenderName.Should().NotContain("更正公告");
+    }
+
+    [Fact]
+    public void Parse_CorrectionSpanInTd_AppendsCorrectionTag()
+    {
+        var html = """
+            <html><body>
+              <table id="tpam">
+                <thead><tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td>測試機關</td>
+                    <td>
+                      <a href="https://web.pcc.gov.tw/prkms/urlSelector/common/tpam?pk=CORRPK01">
+                        <script>Geps3.CNS.pageCode2Img("道路工程");</script>
+                      </a>
+                      <span class="red">(更正公告)</span>
+                    </td>
+                    <td>T-001</td>
+                    <td>公開招標</td>
+                    <td>工程類</td>
+                    <td>115/05/28</td>
+                    <td>115/06/15</td>
+                    <td>5,000,000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </body></html>
+            """;
+
+        var items = _parser.Parse(html, _now);
+        items.Should().HaveCount(1);
+        items[0].TenderName.Should().Be("道路工程(更正公告)");
     }
 
     // ---- 空表格 ----
