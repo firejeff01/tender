@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Tender.Core.Clock;
+using Tender.Core.Keywords;
 using Tender.Core.Models;
 using Tender.Core.Search;
 using Tender.Desktop.Services;
@@ -15,6 +16,7 @@ public partial class DailyQueryViewModel : ObservableObject
     private readonly IBrowserLauncher _browser;
     private readonly ISearchService _searchService;
     private readonly IKeywordsRepository _keywordsRepo;
+    private readonly IKeywordMatcher _keywordMatcher;
     private readonly IClock _clock;
     private readonly IExcelExporter _excelExporter;
     private readonly IXlsmExporter _xlsmExporter;
@@ -115,6 +117,7 @@ public partial class DailyQueryViewModel : ObservableObject
         IBrowserLauncher browser,
         ISearchService searchService,
         IKeywordsRepository keywordsRepo,
+        IKeywordMatcher keywordMatcher,
         IClock clock,
         IExcelExporter excelExporter,
         IXlsmExporter xlsmExporter,
@@ -128,6 +131,7 @@ public partial class DailyQueryViewModel : ObservableObject
         _browser = browser;
         _searchService = searchService;
         _keywordsRepo = keywordsRepo;
+        _keywordMatcher = keywordMatcher;
         _clock = clock;
         _excelExporter = excelExporter;
         _xlsmExporter = xlsmExporter;
@@ -232,6 +236,17 @@ public partial class DailyQueryViewModel : ObservableObject
                 rawItems = snapshot?.Items ?? Array.Empty<TenderItem>();
             }
 
+            // 以「目前」關鍵字設定重新標註命中關鍵字。
+            // MatchedKeywords 是爬蟲當下算好寫進 tenders.json 的，使用者事後在「篩選類別設定」
+            // 新增/修改關鍵字（例：新增 TEST1/交流）後，舊資料的 MatchedKeywords 不含新關鍵字，
+            // 導致上方篩選按鈕找不到（搜尋框則是即時比對 TenderName/AgencyName，故仍找得到）。
+            // 在載入時用最新 KeywordSet 重算，免重爬即可讓按鈕篩選與搜尋框行為一致。
+            var keywordSet = await _keywordsRepo.LoadAsync(ct);
+            rawItems = rawItems
+                .Select(item => item with { MatchedKeywords = _keywordMatcher.Match(item, keywordSet) })
+                .ToList()
+                .AsReadOnly();
+
             // 包裝成 ViewModel
             var wrapped = rawItems.Select(item =>
             {
@@ -245,7 +260,6 @@ public partial class DailyQueryViewModel : ObservableObject
             // 第一次載入：建立關鍵字按鈕群組
             if (KeywordGroups.Count == 0)
             {
-                var keywordSet = await _keywordsRepo.LoadAsync(ct);
                 int fallbackIdx = 0;
                 foreach (var group in keywordSet.Groups)
                 {
